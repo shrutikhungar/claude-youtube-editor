@@ -12,6 +12,7 @@
   "dependencies": {
     "@remotion/bundler": "^4.0.486",
     "@remotion/cli": "^4.0.486",
+    "@remotion/compositor-win32-x64-msvc": "4.0.486",
     "@remotion/google-fonts": "^4.0.486",
     "@remotion/paths": "^4.0.486",
     "@remotion/renderer": "^4.0.486",

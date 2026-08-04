@@ -13,23 +13,23 @@ export const BRAND = {
   // The wordmark, split in three so the MIDDLE part renders in the accent color.
   // e.g. ['Build', 'With', 'AI'] renders the word "With" in indigo.
   // Use ['Acme', 'Labs', ''] for a two-part mark.
-  wordmark: ['Your', 'Channel', ''] as readonly string[],
+  wordmark: ['Soulful ', 'Intelligence', ''] as readonly string[],
   signoff: 'See you in the next one',
 } as const;
 
 export const COLORS = {
   // roles
-  accent: '#6366F1', // indigo — primary
-  accent2: '#9b7cc4', // violet — secondary
-  signal: '#4db8a8', // teal — success / "free"
-  signalAlt: '#4ecdc4', // teal-green companion
+  accent: '#7a6a58', // deep earthy brown — primary (for high contrast text)
+  accent2: '#cfa864', // gold — secondary
+  signal: '#d44a40', // deep red — success / "free"
+  signalAlt: '#b38f52', // dark gold companion
   warn: '#f5d76e', // yellow — attention
   danger: '#e8879f', // pink — contrast / error
-  ink: '#1a1a2e', // primary text on light
-  muted: '#6b6b7b', // secondary text
-  paper: '#fffef7', // light surface / bg
-  cream: '#faf8f5', // alt light band
-  line: '#e7e3da', // 1px borders on light
+  ink: '#2b2520', // primary text on light (rich dark brown)
+  muted: '#75695c', // secondary text
+  paper: '#e4d5c3', // warm taupe surface / bg (matches new image)
+  cream: '#dcccb9', // alt light band
+  line: '#c7baab', // 1px borders on light
   // dark UI / terminal scale (GitHub-ink)
   d900: '#0d1117',
   d800: '#161b22',

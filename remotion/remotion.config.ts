@@ -7,3 +7,7 @@ Config.setPublicDir('../media');
 Config.setVideoImageFormat('jpeg');
 Config.setOverwriteOutput(true);
 Config.setConcurrency(null); // auto
+Config.setDelayRenderTimeoutInMilliseconds(120000);
+
+// Windows ARM64 native Chromium executable fallback
+Config.setBrowserExecutable("C:\\Users\\shrut\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1234\\chrome-headless-shell-win64\\chrome-headless-shell.exe");

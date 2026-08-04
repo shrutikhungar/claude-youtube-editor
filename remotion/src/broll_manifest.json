@@ -1,0 +1,92 @@
+[
+  {
+    "start": 0.193,
+    "end": 25.289,
+    "image": "projects/videos/video-1/broll/scene_000.png"
+  },
+  {
+    "start": 25.289,
+    "end": 52.617,
+    "image": "projects/videos/video-1/broll/scene_001.png"
+  },
+  {
+    "start": 52.617,
+    "end": 77.672,
+    "image": "projects/videos/video-1/broll/scene_002.png"
+  },
+  {
+    "start": 77.672,
+    "end": 105.068,
+    "image": "projects/videos/video-1/broll/scene_003.png"
+  },
+  {
+    "start": 105.068,
+    "end": 130.144,
+    "image": "projects/videos/video-1/broll/scene_004.png"
+  },
+  {
+    "start": 130.144,
+    "end": 158.561,
+    "image": "projects/videos/video-1/broll/scene_005.png"
+  },
+  {
+    "start": 158.561,
+    "end": 186.851,
+    "image": "projects/videos/video-1/broll/scene_006.png"
+  },
+  {
+    "start": 186.851,
+    "end": 221.774,
+    "image": "projects/videos/video-1/broll/scene_007.png"
+  },
+  {
+    "start": 221.774,
+    "end": 246.794,
+    "image": "projects/videos/video-1/broll/scene_008.png"
+  },
+  {
+    "start": 246.794,
+    "end": 276.187,
+    "image": "projects/videos/video-1/broll/scene_009.png"
+  },
+  {
+    "start": 276.187,
+    "end": 317.139,
+    "image": "projects/videos/video-1/broll/scene_010.png"
+  },
+  {
+    "start": 317.139,
+    "end": 342.567,
+    "image": "projects/videos/video-1/broll/scene_011.png"
+  },
+  {
+    "start": 342.567,
+    "end": 376.954,
+    "image": "projects/videos/video-1/broll/scene_012.png"
+  },
+  {
+    "start": 376.954,
+    "end": 404.477,
+    "image": "projects/videos/video-1/broll/scene_013.png"
+  },
+  {
+    "start": 404.477,
+    "end": 432.537,
+    "image": "projects/videos/video-1/broll/scene_014.png"
+  },
+  {
+    "start": 432.537,
+    "end": 457.995,
+    "image": "projects/videos/video-1/broll/scene_015.png"
+  },
+  {
+    "start": 457.995,
+    "end": 486.295,
+    "image": "projects/videos/video-1/broll/scene_016.png"
+  },
+  {
+    "start": 486.295,
+    "end": 493.416,
+    "image": "projects/videos/video-1/broll/scene_017.png"
+  }
+]

@@ -114,7 +114,21 @@ Translated to video (Remotion, 60fps):
   and this file are one contract in three places — keep them in sync** (`/brand-setup` writes all
   three at once). Proof card: `npx remotion still src/index.ts BrandProof out/brand-proof.png --frame=95`.
 
-## 9. Locked decisions & still-open
+## 11. Non-Meditation Episode B-Roll & Visual Layout Contract
+
+For standard conceptual/teaching episodes (e.g. Episode 2, Episode 3, Episode 7), follow this exact visual split layout:
+
+- **Background Canvas:** Textured light warm taupe / grey-stone paper background (`#e4d5c3`). Clean, tactile, non-distracting.
+- **Left Column (60% Width):**
+  - **Episode Header:** Small uppercase serif ("EPISODE 3", "EPISODE 7").
+  - **Main Title:** `Cinzel` serif font in dark ink (`#7a6a58` / `#1a1a2e`), high contrast, title case or uppercase ("WHY THE PAST STILL CONTROLS US").
+  - **Key Points:** Round taupe bullet markers (`•`) with clean serif list items ("OLD TRIGGERS", "THE HIDDEN INFLUENCE", "REACTIONS ROOTED IN THE PAST").
+- **Right Column (40% Width):**
+  - **Conceptual Illustration / Diagram:** Isolated, clean 3D concept artwork (e.g. line-art torso with glowing chest, pink brain with plug, eye dropping a tear, or curve graph for "Natural Emotion Lifecycle Pattern").
+  - **Style:** Focused, minimal, clean isolated graphics—**never** full-bleed chaotic AI landscapes.
+- **Presenter & Captions:**
+  - Speaker keyed in the bottom-right corner.
+  - Live word-highlighted captions centered at the bottom.
 
 - **Brand = a modern AI-studio look** — indigo accent, 3-font system. ✓
 - **Motion = calm & premium** — restrained fade-and-rise, no bounce (§6). ✓
@@ -172,3 +186,59 @@ Plus two brand-specific extras: `page-flip` (storybook) and `chime-reward` (the 
   `clips/`), seeded from `palette.json`, organized by function. It GROWS every video — reuse before
   generating (library-first). SFX that must live *inside* a Remotion shot go in `media/library/sfx/` via
   `staticFile()`.
+
+## 12. Meditation Episode Master Production & Layout Contract (Saved Rules)
+
+For all Meditation Series episodes (e.g. Episode 4.1, Episode 4.2, Episode 5), strictly adhere to the following master production rules:
+
+### A. Layout & Visual Framing (50/50 Symmetry)
+- **Background Canvas:** Light warm taupe paper background (`#e4d5c3`).
+- **50/50 Symmetry:**
+  - **Left 50% (`1060px` width, `left: 50px`):** Reserved for Frosted Glass B-Roll Concept Cards & 3D Artwork.
+  - **Right 50%:** Reserved for keying the speaker in the bottom-right corner over the warm taupe background.
+- **Zero Overlap Guarantee:** The background meditation figure watermark automatically fades to `0% opacity` whenever any card is active on screen.
+
+### B. Authentic Glassmorphism Styling (Frosted Glass)
+- **Translucent Fill:** `backgroundColor: 'rgba(255, 253, 248, 0.55)'` (55% opacity cream glass).
+- **Backdrop Blur:** `backdropFilter: 'blur(30px) saturate(180%)'` with `-webkit-backdrop-filter`.
+- **Glowing Glass Rim Border:** `2px solid rgba(255, 255, 255, 0.85)` white glowing rim + `1px solid #cfa86440` gold outline.
+- **Inner Glass Reflection:** `inset 0 1px 2px rgba(255, 255, 255, 0.9), inset 0 -1px 2px rgba(207, 168, 100, 0.2)` depth shadow.
+
+### C. Particle & Ambient Atmosphere
+- **Floating Starlight Sparkles:** Render `<SparkleParticlesOverlay count={35} />` featuring 35 floating particles (`6–14px` size, colors: `#cfa864`, `#d4a359`, `#7a6a58`, `#ffffff` with `0 0 28px #cfa864` radial glow and `65%–95%` opacity).
+- **Breathing Golden Aura:** 6-second rhythmically expanding/contracting golden light pulse behind the background watermark.
+
+### D. Card Entrance & Exit Motion Easing
+- **Entrance:** Spring slide-up (`translateY: 36px → 0px`), 3D scale-up (`0.93 → 1.0`), and fade-in (`0 → 1`) over 14 frames, accompanied by `warm-shimmer.mp3` SFX.
+- **Exit:** Smooth float-up (`translateY: 0px → -24px`), scale (`1.0 → 0.96`), and fade-out (`1 → 0`) over 12 frames.
+
+### E. Opening & 3-Slide End Promo Sequence
+- **Opening Timeline:**
+  - `0:00 – 0:12`: Frosted Glass Episode Title Slide (`MINDGYM MEDITATION SERIES • EPISODE 4.1`).
+  - `0:12 – 0:35`: Beat 0 Practice Setup Card (`"MEDITATION PRACTICE"`, 3D sculpture artwork, 3 bullet points).
+- **Subscriber Lower-Third Prompts:** Trigger `👍 Like • 💬 Comment • 🔔 Subscribe` glass chip at `1:00`, `4:00`, and `7:00`.
+- **3-Slide End Promo Sequence (`8:02 – 8:20` / 18s total, 6s per slide):**
+  - **Slide 1 (0–6s):** Feelings Course (Uncropped landscape flyer `objectFit: 'contain'` + QR & `skrmblissai.in/FeelingsAndEmotionCourse`).
+  - **Slide 2 (6–12s):** MindGym Web App (Side-by-side app promo + QR & `skrmblissai.in/mindgym`).
+  - **Slide 3 (12–18s):** Mandatory Global Grand Finale Slide with **3 Side-by-Side Hero Action Cards** (`👍 LIKE`, `💬 COMMENT`, `🔔 SUBSCRIBE`), `CONTINUE YOUR DAILY PRACTICE` header, and 1100px Namaste farewell banner.
+
+### F. Audio Master Mix & Vocal Reverb
+- **Vocal Gain:** Boosted by **+60% (`volume={1.6}`)** for clear speech.
+- **Vocal Reverb Filter:** Deep 3-tap spatial meditation hall echo (`aecho=0.85:0.95:85|140|210:0.65|0.52|0.38`). NO chorus.
+- **Background Music:** User humming track (`humming.mp3`) ducked softly at `0.10` volume, fading out smoothly over the final 6 seconds (`494s to 500s`).
+
+## 13. Global End Promo & Finale Standard (Saved Contract Rule)
+
+Every long-form video produced in this repository MUST conclude with the 3-Slide End Promo sequence (`PromoEndCard.tsx`):
+
+1. **Slide 1 (Course Promo):** Landscape flyer + QR code to `skrmblissai.in/FeelingsAndEmotionCourse`.
+2. **Slide 2 (App Promo):** MindGym web app features + QR code to `skrmblissai.in/mindgym`.
+3. **Slide 3 (Mandatory Channel Finale):**
+   - **Header:** `SOULFUL INTELLIGENCE STUDIO` + `CONTINUE YOUR DAILY PRACTICE`.
+   - **3 Side-by-Side Action Cards:**
+     - **LIKE (👍):** *"Show support for daily practice"*
+     - **COMMENT (💬):** *"Share your practice experience"*
+     - **SUBSCRIBE (🔔):** *"Join weekly mindfulness series"* (Highlighted gold border & glow shadow).
+   - **Subtitle:** *"Subscribe for weekly guided breathwork workouts, meditation sessions, and emotional regulation series."*
+   - **Farewell Banner (`1100px` wide):** 🪷 *"May peace, clarity, and presence remain with you throughout your day. Namaste 🙏"*
+
