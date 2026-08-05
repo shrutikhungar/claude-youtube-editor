@@ -153,15 +153,13 @@ export const PRANAYAM_SPECS: Record<PranayamType, PranayamSpec> = {
     turnsPerRep: 1,
     repUnit: 'BREATH',
   },
-  // Light 2s antar kumbhaka before the hum — enough to settle, not enough to strain.
-  // 10s hum: a long exhale for a beginner but reachable. Past ~12s most beginners run
-  // out of air and start straining, which is why it is split into 2 rounds with a rest.
-  // 2 x (9 x 16s) + 12s rest = 300s. 18 hums total.
+  // Bhramari Pranayama: 4s Inhale, 1s Settle Hold, 15s Humming Exhale (Hum Out).
+  // 2 rounds x (7 breaths x 20s) + 1 x 20s rest = 280s + 20s = 300s (5 MINUTES).
   bhramari: {
-    pattern: { inhale: 4, hold1: 2, exhale: 10, hold2: 0 },
-    breathsPerRound: 9,
+    pattern: { inhale: 4, hold1: 1, exhale: 15, hold2: 0 },
+    breathsPerRound: 7,
     rounds: 2,
-    restBetweenRoundsSec: 12,
+    restBetweenRoundsSec: 20,
     endOfRoundInhaleSec: 0,
     endOfRoundAntarSec: 0,
     endOfRoundBahyaSec: 0,
