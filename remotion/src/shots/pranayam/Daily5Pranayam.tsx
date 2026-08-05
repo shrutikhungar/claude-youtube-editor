@@ -224,22 +224,35 @@ export const Daily5Pranayam: React.FC = () => {
           for (let b = 0; b < spec.breathsPerRound; b++) {
             const breathStart = roundStart + b * cycle;
             const side: 'left' | 'right' = b % 2 === 0 ? 'left' : 'right';
-            // Fire one cue at the start of each active phase in the cycle
+            const isFirstBreathOfRound = b === 0;
+
+            // Fire cues at the start of each active phase
             let offset = 0;
             for (const phase of ['inhale', 'hold1', 'exhale', 'hold2'] as const) {
               const dur = spec.pattern[phase];
               if (dur > 0) {
                 const at = breathStart + offset;
                 const key = `cue-${currentType}-r${r}-b${b}-${phase}`;
+
+                // Play gentle full affirmation ONCE on breath 1 of each round for inhale/exhale
+                let soundFile = phaseFile(phase, side);
+                let soundVol = CUE_VOL;
+                let soundDur = Math.min(dur, 3);
+
+                if (isFirstBreathOfRound && (phase === 'inhale' || phase === 'exhale') && spec.pattern[phase] >= 2) {
+                  soundFile = phase === 'inhale'
+                    ? 'library/audio/pranayam/affirmation_inhale.mp3'
+                    : 'library/audio/pranayam/affirmation_exhale.mp3';
+                  soundVol = 0.65;
+                  soundDur = 4;
+                }
+
                 cues.push(
                   <Sequence
                     key={key}
                     from={Math.round(at * fps)}
-                    durationInFrames={Math.round(Math.min(dur, 3) * fps)}
-                    style={{
-                      translate: "208.2px 67.7px"
-                    }}>
-                    <Audio src={staticFile(phaseFile(phase, side))} volume={CUE_VOL} />
+                    durationInFrames={Math.round(soundDur * fps)}>
+                    <Audio src={staticFile(soundFile)} volume={soundVol} />
                   </Sequence>
                 );
                 offset += dur;
