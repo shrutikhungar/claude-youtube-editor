@@ -1,0 +1,87 @@
+{
+  "bhastrika": {
+    "pattern": {
+      "inhale": 1,
+      "hold1": 0,
+      "exhale": 1,
+      "hold2": 0
+    },
+    "breathsPerRound": 21,
+    "rounds": 5,
+    "endOfRoundInhaleSec": 4,
+    "endOfRoundAntarSec": 6,
+    "endOfRoundBahyaSec": 0,
+    "cycleSeconds": 2,
+    "breathingSeconds": 42,
+    "roundSeconds": 52,
+    "practiceSeconds": 300
+  },
+  "kapalbhati": {
+    "pattern": {
+      "inhale": 0,
+      "hold1": 0,
+      "exhale": 1,
+      "hold2": 0
+    },
+    "breathsPerRound": 40,
+    "rounds": 5,
+    "endOfRoundInhaleSec": 4,
+    "endOfRoundAntarSec": 8,
+    "endOfRoundBahyaSec": 0,
+    "cycleSeconds": 1,
+    "breathingSeconds": 40,
+    "roundSeconds": 52,
+    "practiceSeconds": 300
+  },
+  "anulom_vilom": {
+    "pattern": {
+      "inhale": 4,
+      "hold1": 4,
+      "exhale": 4,
+      "hold2": 2
+    },
+    "breathsPerRound": 10,
+    "rounds": 2,
+    "endOfRoundInhaleSec": 0,
+    "endOfRoundAntarSec": 0,
+    "endOfRoundBahyaSec": 0,
+    "cycleSeconds": 14,
+    "breathingSeconds": 140,
+    "roundSeconds": 140,
+    "practiceSeconds": 300
+  },
+  "bahya": {
+    "pattern": {
+      "inhale": 4,
+      "hold1": 0,
+      "exhale": 6,
+      "hold2": 12
+    },
+    "breathsPerRound": 4,
+    "rounds": 3,
+    "endOfRoundInhaleSec": 0,
+    "endOfRoundAntarSec": 0,
+    "endOfRoundBahyaSec": 0,
+    "cycleSeconds": 22,
+    "breathingSeconds": 88,
+    "roundSeconds": 88,
+    "practiceSeconds": 300
+  },
+  "bhramari": {
+    "pattern": {
+      "inhale": 4,
+      "hold1": 1,
+      "exhale": 15,
+      "hold2": 0
+    },
+    "breathsPerRound": 7,
+    "rounds": 2,
+    "endOfRoundInhaleSec": 0,
+    "endOfRoundAntarSec": 0,
+    "endOfRoundBahyaSec": 0,
+    "cycleSeconds": 20,
+    "breathingSeconds": 140,
+    "roundSeconds": 140,
+    "practiceSeconds": 300
+  }
+}

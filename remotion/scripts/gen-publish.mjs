@@ -109,6 +109,42 @@ mkdirSync(outDir, { recursive: true });
 writeFileSync(join(outDir, 'daily5pranayam.chapters.txt'), description, 'utf8');
 writeFileSync(join(outDir, 'daily5pranayam.srt'), srt, 'utf8');
 
+// ------------------------------------------------- spec export for the audio generator
+//
+// gen_pranayam_sfx.py builds one breath track per technique and each track has to be
+// exactly roundSeconds() long with the phases at the right offsets. Python cannot read
+// the TypeScript specs, and mirroring the numbers by hand silently desynchronises the
+// audio from the video the moment a pattern changes. Exporting them removes that risk.
+const bp = await build({
+  entryPoints: [join(SRC, 'breathPattern.ts')],
+  bundle: true, format: 'esm', platform: 'node', write: false,
+});
+const bpMod = await import(
+  'data:text/javascript;base64,' + Buffer.from(bp.outputFiles[0].text).toString('base64')
+);
+
+const specExport = {};
+for (const [key, spec] of Object.entries(bpMod.PRANAYAM_SPECS)) {
+  specExport[key] = {
+    pattern: spec.pattern,
+    breathsPerRound: spec.breathsPerRound,
+    rounds: spec.rounds,
+    endOfRoundInhaleSec: spec.endOfRoundInhaleSec,
+    endOfRoundAntarSec: spec.endOfRoundAntarSec,
+    endOfRoundBahyaSec: spec.endOfRoundBahyaSec,
+    cycleSeconds: bpMod.cycleSeconds(spec),
+    breathingSeconds: bpMod.breathingSeconds(spec),
+    roundSeconds: bpMod.roundSeconds(spec),
+    practiceSeconds: bpMod.practiceSeconds(spec),
+  };
+}
+writeFileSync(join(outDir, 'breath-spec.json'), JSON.stringify(specExport, null, 2), 'utf8');
+
 console.log(`videos/daily5pranayam.chapters.txt  (${lines.length} chapters)`);
 console.log(`videos/daily5pranayam.srt           (${srtCues.length} cues)`);
+console.log('videos/breath-spec.json             (round lengths for gen_pranayam_sfx.py)');
+for (const [k, s] of Object.entries(specExport)) {
+  const ok = s.practiceSeconds === 300 ? 'ok' : `!! practice ${s.practiceSeconds}s, expected 300`;
+  console.log(`  ${k.padEnd(13)} round ${String(s.roundSeconds).padStart(4)}s x ${s.rounds}   ${ok}`);
+}
 console.log(`session length ${stamp(SESSION_SEC)}`);
