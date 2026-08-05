@@ -2,6 +2,7 @@ import React from 'react';
 import { useCurrentFrame, useVideoConfig, interpolate, spring } from 'remotion';
 import { COLORS } from '../../brand';
 import { FONT_DISPLAY, FONT_BODY } from '../../fonts';
+import { INTRO_TECHNIQUE_MARKS, INTRO_DURATION_MARK, INTRO_HIGHLIGHT_SEC } from './introMarks';
 
 export const SessionOverviewCard: React.FC = () => {
   const frame = useCurrentFrame();
@@ -14,6 +15,30 @@ export const SessionOverviewCard: React.FC = () => {
   });
 
   const opacity = interpolate(frame, [0, 15], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+
+  // Each row lights up at the exact moment the narrator says its name. The timings are
+  // the TTS engine's own word-boundary events (see introMarks.ts), not estimates — the
+  // highlight would drift the moment the script or the speaking rate changed otherwise.
+  const t = frame / fps;
+  const lit = (start: number | null, len: number) => {
+    if (start === null || start <= 0) return 0;
+    return interpolate(
+      t,
+      [start - 0.2, start + 0.25, start + len - 0.45, start + len],
+      [0, 1, 1, 0],
+      { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' },
+    );
+  };
+
+  // Stays lit until the next name is spoken, so the highlight travels down the list.
+  const techniqueGlow = (i: number) => {
+    const start = INTRO_TECHNIQUE_MARKS[i];
+    const next = INTRO_TECHNIQUE_MARKS[i + 1];
+    return lit(start ?? null, next ? next - start : INTRO_HIGHLIGHT_SEC);
+  };
+
+  // "…practised for a full five minutes" — every badge answers to that one phrase.
+  const durationGlow = lit(INTRO_DURATION_MARK, 2.6);
 
   const techniques = [
     { num: 1, title: 'BHASTRIKA PRANAYAMA', subtitle: 'Bellows Breathing', time: '5.0 MIN', icon: '🫁' },
@@ -78,31 +103,37 @@ export const SessionOverviewCard: React.FC = () => {
 
       {/* 5 Techniques List Grid */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', maxWidth: '1200px' }}>
-        {techniques.map((tech) => (
+        {techniques.map((tech, i) => {
+          const g = techniqueGlow(i);
+          return (
           <div key={tech.num} style={{
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            backgroundColor: 'rgba(255, 255, 255, 0.85)',
-            border: '1.5px solid rgba(207, 168, 100, 0.30)',
+            backgroundColor: `rgba(255, 253, 244, ${0.85 + 0.12 * g})`,
+            border: `1.5px solid rgba(207, 168, 100, ${0.30 + 0.70 * g})`,
             borderRadius: '20px',
             padding: '16px 28px',
-            boxShadow: '0 8px 20px rgba(122, 106, 88, 0.06)'
+            transform: `scale(${1 + 0.014 * g})`,
+            boxShadow: g > 0
+              ? `0 8px 20px rgba(122, 106, 88, 0.06), 0 0 0 ${5 * g}px rgba(207, 168, 100, ${0.16 * g})`
+              : '0 8px 20px rgba(122, 106, 88, 0.06)',
           }}>
             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px' }}>
               <div style={{
                 width: '42px',
                 height: '42px',
                 borderRadius: '50%',
-                backgroundColor: COLORS.accent,
+                backgroundColor: g > 0.5 ? COLORS.accent2 : COLORS.accent,
                 color: '#ffffff',
                 fontFamily: FONT_DISPLAY,
                 fontSize: '18px',
                 fontWeight: 700,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                boxShadow: `0 0 ${14 * g}px rgba(207, 168, 100, ${0.85 * g})`,
               }}>
                 {tech.num}
               </div>
@@ -117,20 +148,24 @@ export const SessionOverviewCard: React.FC = () => {
               </div>
             </div>
 
+            {/* Pulses when the narrator says "a full five minutes". */}
             <div style={{
               fontFamily: FONT_BODY,
               fontSize: '16px',
               fontWeight: 800,
               color: COLORS.ink,
-              backgroundColor: 'rgba(207, 168, 100, 0.15)',
+              backgroundColor: `rgba(207, 168, 100, ${0.15 + 0.45 * durationGlow})`,
               borderRadius: '12px',
               padding: '8px 18px',
-              border: '1px solid rgba(207, 168, 100, 0.40)'
+              border: `1px solid rgba(207, 168, 100, ${0.40 + 0.60 * durationGlow})`,
+              transform: `scale(${1 + 0.05 * durationGlow})`,
+              boxShadow: `0 0 ${16 * durationGlow}px rgba(207, 168, 100, ${0.7 * durationGlow})`,
             }}>
               ⏱️ {tech.time}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Contraindication notice. Kapalbhati and Bhastrika are forceful techniques and
