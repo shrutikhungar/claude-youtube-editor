@@ -1,5 +1,5 @@
 import React from 'react';
-import { useCurrentFrame, useVideoConfig, interpolate } from 'remotion';
+import { useCurrentFrame, useVideoConfig, interpolate, Img, staticFile } from 'remotion';
 import { COLORS } from '../../brand';
 import { FONT_DISPLAY, FONT_BODY } from '../../fonts';
 
@@ -9,6 +9,8 @@ interface PranayamCardProps {
   sanskritName: string;
   durationMinutes: string | number;
   instructions: string[];
+  illustrationImage?: string;
+  illustrationCaption?: string;
 }
 
 export const PranayamCard: React.FC<PranayamCardProps> = ({
@@ -17,6 +19,8 @@ export const PranayamCard: React.FC<PranayamCardProps> = ({
   sanskritName,
   durationMinutes,
   instructions,
+  illustrationImage,
+  illustrationCaption,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -171,6 +175,34 @@ export const PranayamCard: React.FC<PranayamCardProps> = ({
           </div>
         ))}
       </div>
+
+      {/* Optional Technique Illustration Card (e.g. Shanmukhi Mudra or Bandha Diagram) */}
+      {illustrationImage && (
+        <div style={{
+          display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '14px',
+          backgroundColor: 'rgba(255, 255, 255, 0.85)',
+          border: '1.5px solid rgba(207, 168, 100, 0.45)',
+          borderRadius: '20px', padding: '10px 14px',
+          boxShadow: '0 6px 20px rgba(122, 106, 88, 0.08)',
+          flexShrink: 0
+        }}>
+          <Img
+            src={staticFile(illustrationImage)}
+            style={{
+              width: '84px', height: '74px', borderRadius: '12px', objectFit: 'contain',
+              border: '1px solid rgba(207,168,100,0.3)', backgroundColor: '#fff'
+            }}
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+            <div style={{ fontFamily: FONT_BODY, fontSize: '10px', fontWeight: 800, color: COLORS.accent, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+              TECHNIQUE POSTURE
+            </div>
+            <div style={{ fontFamily: FONT_DISPLAY, fontSize: '15px', fontWeight: 700, color: '#2b2520', lineHeight: 1.25, marginTop: '2px' }}>
+              {illustrationCaption || 'Correct Alignment'}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Caution Footnote Section */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>

@@ -408,12 +408,32 @@ export const Daily5Pranayam: React.FC = () => {
                   instructions={["Close right nostril, inhale through the left.", "Hold the breath in — antar kumbhaka.", "Close left nostril, exhale through the right.", "Hold the breath out — bahya kumbhaka.", "Repeat, now leading with the right nostril."]} />
               )}
               {isBahya && (
-                <PranayamCard number={4} title="BAHYA PRANAYAMA" sanskritName="External Breath Retention" durationMinutes={5}
-                  instructions={["Deep inhale followed by complete exhalation.", "Hold breath out and engage Root Lock (Mula Bandha).", "Pull stomach in for Abdominal Lock (Uddiyana).", "Touch chin to chest for Throat Lock (Jalandhara).", "Release locks smoothly before inhaling."]} />
+                <PranayamCard
+                  number={4} title="BAHYA PRANAYAMA" sanskritName="External Breath Retention" durationMinutes={5}
+                  instructions={[
+                    "Deep inhale followed by complete exhalation.",
+                    "Hold breath out and engage Root Lock (Mula Bandha).",
+                    "Pull stomach in for Abdominal Lock (Uddiyana).",
+                    "Touch chin to chest for Throat Lock (Jalandhara).",
+                    "Release locks smoothly before inhaling."
+                  ]}
+                  illustrationImage="library/images/BandhasDiagram.png"
+                  illustrationCaption="Maha Bandha: Throat, Abdominal & Root Locks"
+                />
               )}
               {isBhramari && (
-                <PranayamCard number={5} title="BHRAMARI PRANAYAMA" sanskritName="Humming Bee Breath" durationMinutes={5}
-                  instructions={["Close ears with thumbs, fingers gently over eyes.", "Inhale deeply through your nose.", "Pause briefly at the top of the inhale.", "Exhale slowly creating a smooth humming sound.", "Feel the vibration resonate through your head."]} />
+                <PranayamCard
+                  number={5} title="BHRAMARI PRANAYAMA" sanskritName="Humming Bee Breath" durationMinutes={5}
+                  instructions={[
+                    "Thumbs on ears & fingers over eyes & lips (Shanmukhi Mudra).",
+                    "Inhale deeply through your nose.",
+                    "Pause briefly at the top of the inhale.",
+                    "Exhale with a steady humming sound like a bee.",
+                    "Feel the vibration resonate through your head."
+                  ]}
+                  illustrationImage="library/images/ShanmukhiMudra.png"
+                  illustrationCaption="Shanmukhi Mudra Hand Position"
+                />
               )}
             </div>
 
