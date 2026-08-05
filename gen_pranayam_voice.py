@@ -39,9 +39,9 @@ async def generate_all():
     for d in out_dirs:
         d.mkdir(parents=True, exist_ok=True)
 
-    # Jenny is tagged Friendly / Considerate / Comfort — the warmest of the English
-    # voices for guidance. Slowed further and pitched down for a settling, unhurried read.
-    voice = "en-US-JennyNeural"
+    # Michelle — chosen by ear from a nine-voice A/B at these exact settings, not from
+    # the personality tags. Slowed and pitched down for a settling, unhurried read.
+    voice = "en-US-MichelleNeural"
 
     for filename, text in SCRIPTS.items():
         print(f"Generating voiceover: {filename}...")
