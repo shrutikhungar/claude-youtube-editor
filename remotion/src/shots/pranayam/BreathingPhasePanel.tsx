@@ -191,6 +191,59 @@ export const BreathingPhasePanel: React.FC<BreathingPhasePanelProps> = ({ startS
         })}
       </div>
 
+      {/* ROUND PROGRESS — the panel used to be two thirds empty on a two-phase
+          technique. This fills it with the thing you actually want to know part way
+          through: how many rounds are behind you and how far into this one you are.
+          One bar per round; completed rounds solid, the current one filling live. */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
+        <div style={{
+          fontFamily: FONT_BODY, fontSize: '11px', fontWeight: 800, color: COLORS.accent,
+          letterSpacing: '0.20em', textTransform: 'uppercase',
+        }}>
+          ROUND PROGRESS
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'row', gap: '6px' }}>
+          {Array.from({ length: state.rounds }).map((_, i) => {
+            const done = i + 1 < state.round;
+            const current = i + 1 === state.round;
+            // Rest and the closing retention both count as "this round finished".
+            const within = state.started && !state.resting && !state.inRoundHold
+              ? state.repIndex / state.repsPerRound
+              : (state.started ? 1 : 0);
+            const fill = done ? 1 : current ? within : 0;
+            return (
+              <div key={i} style={{
+                flex: 1,
+                height: '10px',
+                borderRadius: '5px',
+                backgroundColor: 'rgba(207,168,100,0.18)',
+                border: current ? `1.5px solid ${COLORS.accent2}` : '1.5px solid transparent',
+                overflow: 'hidden',
+                boxSizing: 'border-box',
+              }}>
+                <div style={{
+                  width: `${Math.min(100, Math.max(0, fill * 100))}%`,
+                  height: '100%',
+                  backgroundColor: COLORS.accent2,
+                  opacity: done ? 0.85 : 1,
+                }} />
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{
+          fontFamily: FONT_BODY, fontSize: '13px', fontWeight: 700, color: '#7a6a58',
+          letterSpacing: '0.04em',
+          fontVariantNumeric: 'tabular-nums',
+        }}>
+          ROUND {state.round} OF {state.rounds}
+          {state.started && !state.resting && !state.inRoundHold
+            && ` · ${spec.repUnit} ${state.repIndex} / ${state.repsPerRound}`}
+        </div>
+      </div>
+
       {/* Divider */}
       <div style={{ height: '1px', backgroundColor: 'rgba(207,168,100,0.25)', margin: '4px 0', flexShrink: 0 }} />
 

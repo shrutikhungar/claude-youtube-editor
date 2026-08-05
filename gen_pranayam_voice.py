@@ -18,10 +18,14 @@ SCRIPTS = {
     "anulom_vilom_voice.mp3": "Technique three. Alternate Nostril Breathing. Close your right nostril and inhale through the left for four counts. Hold the breath in for four. Exhale through the right for four, then hold the breath out for two. Repeat, leading with the right nostril.",
     "bahya_voice.mp3": "Technique four. External Breath Retention. Exhale completely, emptying all air from your lungs. Hold your breath outside and gently engage the root, abdominal, and throat locks. Release smoothly before inhaling.",
     "bhramari_voice.mp3": "Technique five. Humming Bee Breath. Place your thumbs on your ears and cover your eyes gently. Inhale deeply, pause briefly at the top, then exhale with a steady humming sound like a bee.",
-    # The per-cycle cue clips ("Inhale." / "Exhale." / "Hold breath.") were removed:
-    # repeated over a five-minute technique they read as chatter, not guidance.
-    # The rhythm is carried by the ring and by the breathing audio from
-    # gen_pranayam_sfx.py. Do not re-add them.
+    # STRUCTURAL cues only. The per-cycle clips ("Inhale." / "Exhale.") were removed:
+    # repeated over a five-minute technique they read as chatter. These three fire at
+    # the transitions instead — roughly once a minute — where the practitioner has
+    # their eyes closed and genuinely cannot tell what happens next.
+    # Do NOT add per-breath cues back.
+    "cue_inhale_hold.mp3": "Now inhale fully, and hold the breath in.",
+    "cue_release.mp3": "Release, and breathe normally.",
+    "cue_relax.mp3": "Beautifully done. Relax, and let the breath settle.",
 }
 
 async def generate_all():

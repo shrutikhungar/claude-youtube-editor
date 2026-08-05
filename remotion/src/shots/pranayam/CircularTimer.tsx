@@ -89,6 +89,15 @@ export const CircularTimer: React.FC<CircularTimerProps> = ({
   // Counts the listener into the practice while the instruction is still playing.
   const leadInSecondsLeft = Math.max(0, Math.ceil(spec.leadInSec - relTime));
 
+  /**
+   * A per-phase countdown only tells you something if the phase is long enough to
+   * count. At Bhastrika's and Kapalbhati's one-second phases it reads a permanent
+   * "1" — noise, not information — so the word carries the cue and the moving dot
+   * carries the rhythm. Lead-in and rest countdowns always show; they are real.
+   */
+  const phaseIsCountable = spec.pattern[state.phase] >= 2;
+  const showDigit = !state.started || state.resting || state.inRoundHold || phaseIsCountable;
+
   const isBhramari = type === 'bhramari';
   // The humming happens on the exhale — that is when the sound plays and the
   // vibration rings radiate from the head.
@@ -217,10 +226,13 @@ export const CircularTimer: React.FC<CircularTimerProps> = ({
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           gap: '2px'
         }}>
-          {/* Longer cues ("FORCEFUL EXHALE") step down a size so they stay inside the ring. */}
+          {/* Longer cues ("FORCEFUL EXHALE") step down a size so they stay inside the ring.
+              When there is no digit to show, the word takes the space instead. */}
           <div style={{
             fontFamily: FONT_BODY,
-            fontSize: centreLabel.length > 12 ? '27px' : '34px',
+            fontSize: showDigit
+              ? (centreLabel.length > 12 ? '27px' : '34px')
+              : (centreLabel.length > 12 ? '40px' : '52px'),
             fontWeight: 800,
             color: activeColor,
             letterSpacing: '0.14em',
@@ -231,17 +243,19 @@ export const CircularTimer: React.FC<CircularTimerProps> = ({
           }}>
             {centreLabel}
           </div>
-          <div style={{
-            fontFamily: FONT_DISPLAY,
-            fontSize: '92px',
-            fontWeight: 700,
-            color: activeColor,
-            lineHeight: 1
-          }}>
-            {!state.started
-              ? leadInSecondsLeft
-              : state.resting ? state.restSecondsLeft : state.phaseSecondsLeft}
-          </div>
+          {showDigit && (
+            <div style={{
+              fontFamily: FONT_DISPLAY,
+              fontSize: '92px',
+              fontWeight: 700,
+              color: activeColor,
+              lineHeight: 1
+            }}>
+              {!state.started
+                ? leadInSecondsLeft
+                : state.resting ? state.restSecondsLeft : state.phaseSecondsLeft}
+            </div>
+          )}
           {/* Traditional name, secondary to the plain-English cue above. */}
           {state.started && !state.resting && PHASE_SANSKRIT[state.phase] && (
             <div style={{

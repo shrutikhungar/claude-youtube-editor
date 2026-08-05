@@ -16,7 +16,7 @@ import PromoEndCard from '../brand/PromoEndCard';
 import PeriodicLikeBanner, { likeBannerOpacity } from '../brand/PeriodicLikeBanner';
 import TechniqueCompleteCard from './TechniqueCompleteCard';
 import {
-  PranayamType, PRANAYAM_SPECS, cycleSeconds, roundSeconds, totalReps, resolveBreath, repsPerRound,
+  PranayamType, PRANAYAM_SPECS, cycleSeconds, roundSeconds, breathingSeconds, totalReps, resolveBreath, repsPerRound,
 } from './breathPattern';
 import {
   INTRO_SEC, REST_SEC, VOICE_WINDOW_SEC, PROMO_SEC, CELEBRATE_SEC,
@@ -188,6 +188,59 @@ export const Daily5Pranayam: React.FC = () => {
           <Audio src={staticFile('library/audio/pranayam/bhramari_voice.mp3')} volume={0.85} />
         </Sequence>
       )}
+      {/* --- STRUCTURAL VOICE CUES ---
+          The transitions were silent, which leaves you guessing with your eyes closed:
+          when to take the closing inhale, when a round has ended, and when the rest
+          starts. These fire only at those moments — roughly once a minute — never per
+          breath. Positions come from the spec, so a retime moves them automatically. */}
+      {isActiveTechnique && (() => {
+        const spec = PRANAYAM_SPECS[currentType];
+        const roundLen = roundSeconds(spec);
+        const roundSlot = roundLen + spec.restBetweenRoundsSec;
+        const cues: Array<{ key: string; at: number; file: string; window: number }> = [];
+
+        for (let r = 0; r < spec.rounds; r++) {
+          const roundStart = currentStartSec + spec.leadInSec + r * roundSlot;
+
+          // "Now inhale fully, and hold" — only where the round closes with a retention.
+          if (spec.endOfRoundInhaleSec > 0) {
+            cues.push({
+              key: `inhale-hold-${r}`,
+              at: roundStart + breathingSeconds(spec),
+              file: 'cue_inhale_hold.mp3',
+              window: spec.endOfRoundInhaleSec + spec.endOfRoundAntarSec,
+            });
+          }
+
+          // "Release, and breathe normally" at the start of the between-round rest.
+          // Skipped on the last round — the completion chime and flash cover that.
+          if (r < spec.rounds - 1 && spec.restBetweenRoundsSec > 0) {
+            cues.push({
+              key: `release-${r}`,
+              at: roundStart + roundLen,
+              file: 'cue_release.mp3',
+              window: spec.restBetweenRoundsSec,
+            });
+          }
+        }
+
+        return cues.map((c) => (
+          <Sequence key={c.key} from={Math.round(c.at * fps)} durationInFrames={Math.round(c.window * fps)}>
+            <Audio src={staticFile(`library/audio/pranayam/${c.file}`)} volume={0.8} />
+          </Sequence>
+        ));
+      })()}
+
+      {/* "Beautifully done. Relax." over the relaxation between techniques. */}
+      {isResting && (() => {
+        const at = isRest1 ? T_REST_1 : isRest2 ? T_REST_2 : isRest3 ? T_REST_3 : T_REST_4;
+        return (
+          <Sequence from={Math.round(at * fps)} durationInFrames={Math.round(REST_SEC * fps)}>
+            <Audio src={staticFile('library/audio/pranayam/cue_relax.mp3')} volume={0.85} />
+          </Sequence>
+        );
+      })()}
+
       {/* --- BREATHING SOUND ---
           Not spoken cues (those were removed as chatter) but the sound of the practice
           itself, so the rhythm is followable with the eyes closed. One pre-rendered track
