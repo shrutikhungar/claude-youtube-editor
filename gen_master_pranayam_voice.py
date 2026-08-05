@@ -10,29 +10,31 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 VOICE = "en-US-AriaNeural"
 
+# ENGLISH-ONLY NARRATION — see the note in gen_pranayam_voice.py. The TTS voice
+# cannot pronounce the Sanskrit names, so they are never spoken; they appear on screen only.
 TECHNIQUES = {
     "bhastrika": {
-        "intro": "Welcome to Bhastrika Pranayama, or Bellows Breathing. Sit comfortably with a straight spine. Inhale deeply through your nose, expanding your chest, then exhale forcefully. Maintain a steady, rhythmic pace.",
+        "intro": "Technique one. Bellows Breathing. Sit comfortably with a straight spine. Inhale deeply through your nose, expanding your chest, then exhale forcefully. Maintain a steady, rhythmic pace.",
         "cadence": [("Inhale.", 4), ("Hold breath.", 4), ("Exhale.", 4), ("Hold breath.", 4)],
         "duration_sec": 90
     },
     "kapalbhati": {
-        "intro": "Now we begin Kapalbhati Pranayama, the Skull Shining Breath. Exhale forcefully by contracting your lower abdomen, and allow each inhalation to happen naturally and passively. Keep your shoulders relaxed.",
+        "intro": "Technique two. Skull Shining Breath. Exhale forcefully by contracting your lower abdomen, and allow each inhalation to happen naturally and passively. Keep your shoulders relaxed.",
         "cadence": [("Exhale.", 2), ("Inhale.", 2)],
         "duration_sec": 90
     },
     "anulom_vilom": {
-        "intro": "Transition into Anulom Vilom, Alternate Nostril Breathing. Close your right nostril with your thumb and inhale gently through the left. Close your left nostril and exhale smoothly through the right.",
+        "intro": "Technique three. Alternate Nostril Breathing. Close your right nostril with your thumb and inhale gently through the left. Close your left nostril and exhale smoothly through the right.",
         "cadence": [("Inhale left.", 4), ("Hold.", 4), ("Exhale right.", 4), ("Inhale right.", 4), ("Exhale left.", 4)],
         "duration_sec": 90
     },
     "bahya": {
-        "intro": "Prepare for Bahya Pranayama, External Breath Retention. Exhale completely, emptying all air from your lungs. Hold your breath outside and engage your root, abdominal, and throat locks.",
+        "intro": "Technique four. External Breath Retention. Exhale completely, emptying all air from your lungs. Hold your breath outside and engage your root, abdominal, and throat locks.",
         "cadence": [("Inhale deeply.", 4), ("Exhale completely.", 4), ("Hold outside and engage locks.", 10), ("Release and breathe.", 4)],
         "duration_sec": 90
     },
     "bhramari": {
-        "intro": "Finally, Bhramari Pranayama, the Humming Bee Breath. Place your thumbs on your ears and cover your eyes gently. Inhale deeply, and as you exhale, create a steady, soothing humming sound like a bee.",
+        "intro": "Technique five. Humming Bee Breath. Place your thumbs on your ears and cover your eyes gently. Inhale deeply, and as you exhale, create a steady, soothing humming sound like a bee.",
         "cadence": [("Inhale deeply.", 4), ("Exhale with humming sound.", 8)],
         "duration_sec": 90
     }

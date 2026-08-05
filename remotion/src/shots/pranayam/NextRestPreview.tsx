@@ -13,23 +13,25 @@ export const NextRestPreview: React.FC<NextRestPreviewProps> = ({
 }) => {
   return (
     <div style={{
-      width: '640px',
-      height: '155px',
+      // Spans its column rather than a fixed 640px, so it stays centred under the timer.
+      width: '100%',
+      height: '124px',
       backgroundColor: 'rgba(255, 253, 248, 0.75)',
       border: '2px solid rgba(255, 255, 255, 0.90)',
       outline: '1px solid rgba(207, 168, 100, 0.35)',
-      borderRadius: '28px',
-      padding: '24px 36px',
+      borderRadius: '26px',
+      padding: '20px 34px',
       display: 'flex',
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      gap: '20px',
       boxShadow: '0 16px 40px rgba(122, 106, 88, 0.10)',
       backdropFilter: 'blur(30px) saturate(180%)',
       boxSizing: 'border-box'
     }}>
       {/* Left Icon & Next Title */}
-      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px' }}>
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px', minWidth: 0 }}>
         {/* Leaf / Sprout Circle Icon */}
         <div style={{
           width: '56px',
@@ -45,10 +47,10 @@ export const NextRestPreview: React.FC<NextRestPreviewProps> = ({
           🌱
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <div style={{
             fontFamily: FONT_BODY,
-            fontSize: '14px',
+            fontSize: '13px',
             fontWeight: 800,
             color: '#7a6a58',
             letterSpacing: '0.14em',
@@ -61,7 +63,10 @@ export const NextRestPreview: React.FC<NextRestPreviewProps> = ({
             fontSize: '24px',
             fontWeight: 700,
             color: '#2b2520',
-            letterSpacing: '0.02em'
+            letterSpacing: '0.02em',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
           }}>
             {title}
           </div>
@@ -77,7 +82,8 @@ export const NextRestPreview: React.FC<NextRestPreviewProps> = ({
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
-        gap: '10px'
+        gap: '10px',
+        flexShrink: 0
       }}>
         <span style={{ fontSize: '18px' }}>⌛</span>
         <span style={{ fontFamily: FONT_MONO, fontSize: '20px', fontWeight: 700, color: '#7a6a58' }}>

@@ -6,13 +6,18 @@ import edge_tts
 
 ROOT = Path(__file__).resolve().parent
 
+# ENGLISH-ONLY NARRATION.
+# The TTS voice mangles the Sanskrit names (Bhastrika, Kapalbhati, Anulom Vilom,
+# Bahya, Bhramari, Pranayama), so the spoken track uses the English names only.
+# The Sanskrit titles still appear ON SCREEN via PranayamCard — do not put them back
+# into these strings.
 SCRIPTS = {
-    "intro_voice.mp3": "Welcome to Soulful Intelligence Studio. Today we practice the Daily 5 Pranayam sequence. We will guide you through 5 powerful breathwork techniques: Bhastrika, Kapalbhati, Anulom Vilom, Bahya, and Bhramari Pranayama. Each technique is practiced for a full 5 minutes with 30-second recovery breaks. Let us begin.",
-    "bhastrika_voice.mp3": "Welcome to Bhastrika Pranayama, or Bellows Breathing. Sit comfortably with a straight spine. Inhale deeply through your nose, expanding your chest, then exhale forcefully. Maintain a steady, rhythmic cadence. Breathe deeply.",
-    "kapalbhati_voice.mp3": "Now we begin Kapalbhati Pranayama, the Skull Shining Breath. Exhale forcefully by contracting your lower abdomen, and allow each inhalation to happen naturally and passively. Keep your shoulders relaxed.",
-    "anulom_vilom_voice.mp3": "Transition into Anulom Vilom, Alternate Nostril Breathing. Follow the Hatha ratio of 1:4:2. Close your right nostril with your thumb and inhale through your left nostril. Hold your breath inside, then exhale through your right. Inhale right, hold, and exhale left.",
-    "bahya_voice.mp3": "Prepare for Bahya Pranayama, External Breath Retention. Exhale completely, emptying all air from your lungs. Hold your breath outside and gently engage the root, abdominal, and throat locks. Release smoothly before inhaling.",
-    "bhramari_voice.mp3": "Finally, Bhramari Pranayama, the Humming Bee Breath. Place your thumbs on your ears and cover your eyes gently. Inhale deeply, and as you exhale, create a steady, soothing humming sound like a bee. Feel the peaceful vibration.",
+    "intro_voice.mp3": "Welcome to Soulful Intelligence Studio. Today we practice the Daily Five breathwork sequence. We will guide you through five powerful breathing techniques: Bellows Breathing, Skull Shining Breath, Alternate Nostril Breathing, External Breath Retention, and Humming Bee Breath. Each technique is practiced for a full five minutes, with thirty second recovery breaks. Let us begin.",
+    "bhastrika_voice.mp3": "Technique one. Bellows Breathing. Sit comfortably with a straight spine. Inhale deeply through your nose, then exhale forcefully, at a steady rhythmic pace. At the end of each round, inhale fully and hold the breath in.",
+    "kapalbhati_voice.mp3": "Technique two. Skull Shining Breath. Exhale forcefully by contracting your lower abdomen, and allow each inhalation to happen naturally and passively. At the end of each round, inhale fully and hold the breath in.",
+    "anulom_vilom_voice.mp3": "Technique three. Alternate Nostril Breathing. Close your right nostril and inhale through the left for four counts. Hold the breath in for four. Exhale through the right for four, then hold the breath out for two. Repeat, leading with the right nostril.",
+    "bahya_voice.mp3": "Technique four. External Breath Retention. Exhale completely, emptying all air from your lungs. Hold your breath outside and gently engage the root, abdominal, and throat locks. Release smoothly before inhaling.",
+    "bhramari_voice.mp3": "Technique five. Humming Bee Breath. Place your thumbs on your ears and cover your eyes gently. Inhale deeply, pause briefly at the top, then exhale with a steady humming sound like a bee.",
     "cue_inhale.mp3": "Inhale.",
     "cue_exhale.mp3": "Exhale.",
     "cue_hold.mp3": "Hold breath.",
@@ -34,11 +39,13 @@ async def generate_all():
     for d in out_dirs:
         d.mkdir(parents=True, exist_ok=True)
 
-    voice = "en-US-AvaNeural" # Soft, ultra-gentle, meditative female voice
+    # Jenny is tagged Friendly / Considerate / Comfort — the warmest of the English
+    # voices for guidance. Slowed further and pitched down for a settling, unhurried read.
+    voice = "en-US-JennyNeural"
 
     for filename, text in SCRIPTS.items():
-        print(f"Generating Ava voiceover: {filename}...")
-        communicate = edge_tts.Communicate(text, voice, rate="-12%", pitch="-3Hz")
+        print(f"Generating voiceover: {filename}...")
+        communicate = edge_tts.Communicate(text, voice, rate="-22%", pitch="-8Hz")
         
         # Save to primary directory first
         primary_file = out_dirs[0] / filename

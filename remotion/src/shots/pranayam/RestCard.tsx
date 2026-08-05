@@ -22,8 +22,9 @@ export const RestCard: React.FC<RestCardProps> = ({
   const relTime = startSec > 0 ? Math.max(0, currentTime - startSec) : currentTime % durationInSeconds;
   const secondsLeft = Math.max(0, Math.ceil(durationInSeconds - relTime));
 
-  // Breathing expansion guide (6s cycle)
-  const breathCycle = (currentTime % 6) / 6;
+  // Breathing expansion guide (6s cycle), counted from the START of the rest so the
+  // guide circle and the countdown begin together instead of at an arbitrary phase.
+  const breathCycle = (relTime % 6) / 6;
   const breathRadius = interpolate(Math.sin(breathCycle * Math.PI * 2), [-1, 1], [90, 140]);
   const breathLabel = breathCycle < 0.5 ? 'GENTLY INHALE...' : 'SLOWLY EXHALE...';
 

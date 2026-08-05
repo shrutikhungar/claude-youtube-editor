@@ -72,7 +72,7 @@ export const SessionOverviewCard: React.FC = () => {
           padding: '6px 20px',
           marginTop: '4px'
         }}>
-          🕒 TOTAL DURATION: 28 MINUTES (5 MIN PER TECHNIQUE + 30 SEC RECOVERY BREAKS)
+          🕒 TOTAL DURATION: 30 MINUTES (5 MIN PRACTICE PER TECHNIQUE + 30 SEC RECOVERY BREAKS)
         </div>
       </div>
 
