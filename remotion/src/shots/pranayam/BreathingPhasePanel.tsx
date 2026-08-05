@@ -192,28 +192,46 @@ export const BreathingPhasePanel: React.FC<BreathingPhasePanelProps> = ({ startS
       </div>
 
       {/* Divider */}
-      <div style={{ height: '1px', backgroundColor: 'rgba(207,168,100,0.20)', margin: '0 2px', flexShrink: 0 }} />
+      <div style={{ height: '1px', backgroundColor: 'rgba(207,168,100,0.25)', margin: '4px 0', flexShrink: 0 }} />
 
-      {/* Rep + Round counters — both driven by the same resolver as the ring above. */}
-      <div style={{ display: 'flex', flexDirection: 'row', gap: '12px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px', flex: 1 }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'rgba(207,168,100,0.12)', border: '1.5px solid rgba(207,168,100,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>🔄</div>
+      {/* NEXT RELAXATION PREVIEW CARD (Moved to Right Column) */}
+      <div style={{
+        display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        backgroundColor: 'rgba(255, 255, 255, 0.75)',
+        border: '1.5px solid rgba(207, 168, 100, 0.35)',
+        borderRadius: '18px',
+        padding: '12px 16px',
+        flexShrink: 0,
+        boxShadow: '0 4px 16px rgba(122, 106, 88, 0.06)'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '36px', height: '36px', borderRadius: '50%',
+            backgroundColor: '#eddcc4', border: '1px solid rgba(207, 168, 100, 0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0
+          }}>
+            🌱
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontFamily: FONT_BODY, fontSize: '11px', fontWeight: 700, color: COLORS.accent, letterSpacing: '0.15em', textTransform: 'uppercase' }}>{spec.repUnit}</div>
-            <div style={{ fontFamily: FONT_DISPLAY, fontSize: '20px', fontWeight: 700, color: COLORS.ink }}>
-              {String(state.started && !state.resting ? state.repIndex : 0).padStart(2, '0')} / {String(state.repsPerRound).padStart(2, '0')}
+            <div style={{ fontFamily: FONT_BODY, fontSize: '9px', fontWeight: 800, color: '#7a6a58', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+              NEXT:
+            </div>
+            <div style={{ fontFamily: FONT_DISPLAY, fontSize: '15px', fontWeight: 700, color: '#2b2520' }}>
+              {type === 'bhramari' ? 'SESSION COMPLETE' : '10 SEC RELAXATION'}
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px', flex: 1 }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'rgba(207,168,100,0.12)', border: '1.5px solid rgba(207,168,100,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>🪷</div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontFamily: FONT_BODY, fontSize: '11px', fontWeight: 700, color: COLORS.accent, letterSpacing: '0.15em', textTransform: 'uppercase' }}>ROUND</div>
-            <div style={{ fontFamily: FONT_DISPLAY, fontSize: '20px', fontWeight: 700, color: COLORS.ink }}>
-              {state.round} OF {state.rounds}
-            </div>
+        {type !== 'bhramari' && (
+          <div style={{
+            backgroundColor: '#eddcc4', border: '1px solid rgba(207, 168, 100, 0.4)',
+            borderRadius: '12px', padding: '5px 12px', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0
+          }}>
+            <span style={{ fontSize: '14px' }}>⌛</span>
+            <span style={{ fontFamily: FONT_BODY, fontSize: '14px', fontWeight: 700, color: '#7a6a58' }}>
+              00:10
+            </span>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

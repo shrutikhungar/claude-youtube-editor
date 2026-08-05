@@ -7,13 +7,14 @@ import BreathingPhasePanel from './BreathingPhasePanel';
 import PranayamCard from './PranayamCard';
 import RestCard from './RestCard';
 import NextRestPreview from './NextRestPreview';
+import BreathAffirmationCard from './BreathAffirmationCard';
 import SessionOverviewCard from './SessionOverviewCard';
 import SparkleParticlesOverlay from '../brand/SparkleParticlesOverlay';
 import PromoEndCard from '../brand/PromoEndCard';
 import PeriodicLikeBanner, { likeBannerOpacity } from '../brand/PeriodicLikeBanner';
 import TechniqueCompleteCard from './TechniqueCompleteCard';
 import {
-  PranayamType, PRANAYAM_SPECS, roundSeconds, totalReps,
+  PranayamType, PRANAYAM_SPECS, cycleSeconds, roundSeconds, totalReps, resolveBreath, repsPerRound,
 } from './breathPattern';
 import {
   INTRO_SEC, REST_SEC, VOICE_WINDOW_SEC, PROMO_SEC, CELEBRATE_SEC,
@@ -93,6 +94,11 @@ export const Daily5Pranayam: React.FC = () => {
     : isBhramari ? T_BHRAMARI
     : T_BHASTRIKA;
 
+  // Live breath state for STROKE + ROUND badges above the timer
+  const breathState = isActiveTechnique
+    ? resolveBreath(PRANAYAM_SPECS[currentType], currentTime - currentStartSec)
+    : null;
+
   return (
     <AbsoluteFill style={{ backgroundColor: '#f5ebe0', overflow: 'hidden' }}>
       {/* End Promotional Slides */}
@@ -171,6 +177,8 @@ export const Daily5Pranayam: React.FC = () => {
         const spec = PRANAYAM_SPECS[currentType];
         const roundLen = roundSeconds(spec);
         const roundSlot = roundLen + spec.restBetweenRoundsSec;
+        // Bhastrika breath sounds are louder/more forceful by nature — keep them subtle
+        const breathVolume = currentType === 'bhastrika' ? 0.10 : 0.55;
         return Array.from({ length: spec.rounds }).map((_, r) => {
           const at = currentStartSec + spec.leadInSec + r * roundSlot;
           return (
@@ -179,12 +187,106 @@ export const Daily5Pranayam: React.FC = () => {
               from={Math.round(at * fps)}
               durationInFrames={Math.round(roundLen * fps)}
               style={{
-                translate: "33.9px -17.8px"
+                translate: "1081px 664.4px"
               }}>
-              <Audio src={staticFile(BREATH_TRACKS[currentType])} volume={0.55} />
+              <Audio src={staticFile(BREATH_TRACKS[currentType])} volume={breathVolume} />
             </Sequence>
           );
         });
+      })()}
+      {/* --- GENTLE PHASE CUE VOICES ---
+          One soft spoken word at the START of each phase (Inhale → Hold → Exhale → Hold).
+          No counting — the visual ring handles the timing. Kapalbhati is skipped because
+          1-second strokes would turn every breath into a voice cue, which is noise.
+          Anulom Vilom uses nostril-specific cues (inhale_left / exhale_right etc). */}
+      {isActiveTechnique && currentType !== 'kapalbhati' && (() => {
+        const spec = PRANAYAM_SPECS[currentType];
+        const cycle = cycleSeconds(spec);
+        const roundLen = roundSeconds(spec);
+        const roundSlot = roundLen + spec.restBetweenRoundsSec;
+        const CUE_VOL = 0.55;
+        const cues: React.ReactNode[] = [];
+
+        // Map each active phase to its cue file, respecting nostril for Anulom Vilom
+        const phaseFile = (phase: 'inhale' | 'hold1' | 'exhale' | 'hold2', side: 'left' | 'right') => {
+          if (phase === 'hold1') return 'library/audio/pranayam/cue_hold.mp3';
+          if (phase === 'hold2') return 'library/audio/pranayam/cue_hold.mp3';
+          if (spec.alternatesSides) {
+            if (phase === 'inhale') return side === 'left' ? 'library/audio/pranayam/cue_inhale_left.mp3' : 'library/audio/pranayam/cue_inhale_right.mp3';
+            if (phase === 'exhale') return side === 'left' ? 'library/audio/pranayam/cue_exhale_right.mp3' : 'library/audio/pranayam/cue_exhale_left.mp3';
+          }
+          if (phase === 'inhale') return 'library/audio/pranayam/cue_inhale.mp3';
+          return 'library/audio/pranayam/cue_exhale.mp3';
+        };
+
+        for (let r = 0; r < spec.rounds; r++) {
+          const roundStart = currentStartSec + spec.leadInSec + r * roundSlot;
+          for (let b = 0; b < spec.breathsPerRound; b++) {
+            const breathStart = roundStart + b * cycle;
+            const side: 'left' | 'right' = b % 2 === 0 ? 'left' : 'right';
+            // Fire one cue at the start of each active phase in the cycle
+            let offset = 0;
+            for (const phase of ['inhale', 'hold1', 'exhale', 'hold2'] as const) {
+              const dur = spec.pattern[phase];
+              if (dur > 0) {
+                const at = breathStart + offset;
+                const key = `cue-${currentType}-r${r}-b${b}-${phase}`;
+                cues.push(
+                  <Sequence
+                    key={key}
+                    from={Math.round(at * fps)}
+                    durationInFrames={Math.round(Math.min(dur, 3) * fps)}
+                    style={{
+                      translate: "208.2px 67.7px"
+                    }}>
+                    <Audio src={staticFile(phaseFile(phase, side))} volume={CUE_VOL} />
+                  </Sequence>
+                );
+                offset += dur;
+              }
+            }
+          }
+          // End-of-round closing retention cues: Inhale → Hold → Exhale → Rest
+          if (spec.endOfRoundInhaleSec > 0) {
+            const inhaleStart = roundStart + roundLen - spec.endOfRoundInhaleSec - spec.endOfRoundAntarSec - spec.endOfRoundBahyaSec;
+
+            // "Inhale" — deep catch-up breath
+            cues.push(
+              <Sequence key={`cue-${currentType}-r${r}-roundinhale`} from={Math.round(inhaleStart * fps)} durationInFrames={Math.round(3 * fps)}>
+                <Audio src={staticFile('library/audio/pranayam/cue_inhale.mp3')} volume={CUE_VOL} />
+              </Sequence>
+            );
+
+            // "Hold" — antar kumbhaka
+            if (spec.endOfRoundAntarSec > 0) {
+              const antarStart = inhaleStart + spec.endOfRoundInhaleSec;
+              cues.push(
+                <Sequence key={`cue-${currentType}-r${r}-antar`} from={Math.round(antarStart * fps)} durationInFrames={Math.round(3 * fps)}>
+                  <Audio src={staticFile('library/audio/pranayam/cue_hold.mp3')} volume={CUE_VOL} />
+                </Sequence>
+              );
+
+              // "Exhale" — release the held breath, 0.5s before hold ends
+              const exhaleStart = antarStart + spec.endOfRoundAntarSec - 0.5;
+              cues.push(
+                <Sequence key={`cue-${currentType}-r${r}-roundexhale`} from={Math.round(exhaleStart * fps)} durationInFrames={Math.round(3 * fps)}>
+                  <Audio src={staticFile('library/audio/pranayam/cue_exhale.mp3')} volume={CUE_VOL} />
+                </Sequence>
+              );
+            }
+          }
+
+          // "Rest" — at the start of the between-rounds rest (skip after the last round)
+          if (r < spec.rounds - 1 && spec.restBetweenRoundsSec > 0) {
+            const restStart = roundStart + roundLen; // exact frame when rest begins
+            cues.push(
+              <Sequence key={`cue-${currentType}-r${r}-rest`} from={Math.round(restStart * fps)} durationInFrames={Math.round(3 * fps)}>
+                <Audio src={staticFile('library/audio/pranayam/cue_rest.mp3')} volume={CUE_VOL} />
+              </Sequence>
+            );
+          }
+        } // end for(r)
+        return cues;
       })()}
       {/* Sparkle Particles */}
       <SparkleParticlesOverlay count={30} />
@@ -299,28 +401,67 @@ export const Daily5Pranayam: React.FC = () => {
               )}
             </div>
 
-            {/* === COLUMN 2: Center — Circular Timer + Big Clock + Next Card (fills the remaining ~922) === */}
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '16px' }}>
-              {/* Circular Timer Card */}
+            {/* === COLUMN 2: Center — Unified Card (Badges + Circular Timer) + Next Card === */}
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '12px' }}>
+
+              {/* Single Unified Card containing STROKE, ROUND, and CIRCULAR TIMER */}
               <div style={{
                 flex: 1, width: '100%', minHeight: 0,
-                backgroundColor: 'rgba(255,253,248,0.78)',
-                border: '1.5px solid rgba(207,168,100,0.35)',
+                backgroundColor: 'rgba(255,253,248,0.85)',
+                border: '1.5px solid rgba(207,168,100,0.40)',
                 borderRadius: '28px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                display: 'flex', flexDirection: 'column', alignItems: 'stretch',
                 boxShadow: '0 16px 40px rgba(122,106,88,0.10)',
                 backdropFilter: 'blur(24px)',
                 overflow: 'hidden'
               }}>
-                <CircularTimer startSec={currentStartSec} type={currentType} />
+                {/* Integrated Top Bar inside Card */}
+                {breathState && (
+                  <div style={{
+                    display: 'flex', flexDirection: 'row', alignItems: 'center',
+                    borderBottom: '1px solid rgba(207,168,100,0.25)',
+                    backgroundColor: 'rgba(255,253,248,0.60)',
+                    flexShrink: 0
+                  }}>
+                    {/* BREATH / STROKE / CYCLE */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px', padding: '14px 24px' }}>
+                      <div style={{ fontSize: '20px' }}>🔄</div>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ fontFamily: FONT_BODY, fontSize: '10px', fontWeight: 800, color: COLORS.accent, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+                          {PRANAYAM_SPECS[currentType].repUnit}
+                        </div>
+                        <div style={{ fontFamily: FONT_DISPLAY, fontSize: '26px', fontWeight: 700, color: '#2b2520', lineHeight: 1 }}>
+                          {String(breathState.started && !breathState.resting ? breathState.repIndex : 0).padStart(2, '0')}
+                          <span style={{ fontSize: '16px', fontWeight: 500, color: '#7a6a58', marginLeft: '5px' }}>
+                            / {String(breathState.repsPerRound).padStart(2, '0')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Vertical divider */}
+                    <div style={{ width: '1px', height: '36px', backgroundColor: 'rgba(207,168,100,0.30)' }} />
+
+                    {/* ROUND */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '14px 24px', backgroundColor: `${COLORS.accent}12` }}>
+                      <div style={{ fontFamily: FONT_BODY, fontSize: '10px', fontWeight: 800, color: COLORS.accent, letterSpacing: '0.20em', textTransform: 'uppercase' }}>ROUND</div>
+                      <div style={{ fontFamily: FONT_DISPLAY, fontSize: '30px', fontWeight: 700, color: COLORS.accent, lineHeight: 1, marginTop: '2px' }}>
+                        {breathState.round}
+                        <span style={{ fontSize: '17px', fontWeight: 600, opacity: 0.75, marginLeft: '6px' }}>OF {breathState.rounds}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Circular Timer filling remaining card space */}
+                <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CircularTimer startSec={currentStartSec} type={currentType} />
+                </div>
               </div>
 
-              {/* Next Rest Preview */}
+              {/* Dynamic Healing Breath Affirmations Card */}
               <div style={{ width: '100%', flexShrink: 0 }}>
-                <NextRestPreview
-                  title={isBhramari ? "GREAT WORK! SESSION COMPLETE" : `${REST_SEC} SEC RELAXATION`}
-                  durationSec={isBhramari ? 0 : REST_SEC}
-                />
+                <BreathAffirmationCard startSec={currentStartSec} type={currentType} />
               </div>
             </div>
 
