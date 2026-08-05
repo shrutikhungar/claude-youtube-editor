@@ -13,38 +13,17 @@ import PromoEndCard from '../brand/PromoEndCard';
 import PeriodicLikeBanner, { likeBannerOpacity } from '../brand/PeriodicLikeBanner';
 import TechniqueCompleteCard from './TechniqueCompleteCard';
 import {
-  PranayamType, PRANAYAM_SPECS, totalSeconds, roundSeconds, totalReps,
+  PranayamType, PRANAYAM_SPECS, roundSeconds, totalReps,
 } from './breathPattern';
+import {
+  INTRO_SEC, REST_SEC, VOICE_WINDOW_SEC, PROMO_SEC, CELEBRATE_SEC,
+  T_BHASTRIKA, T_CELEB_1, T_REST_1, T_KAPALBHATI, T_CELEB_2, T_REST_2,
+  T_ANULOM, T_CELEB_3, T_REST_3, T_BAHYA, T_CELEB_4, T_REST_4,
+  T_BHRAMARI, T_FINALE, T_PROMO, SESSION_SEC,
+} from './sessionTimeline';
 
-// --- MASTER TIMELINE ---
-// Every technique slot is derived from its spec (spoken lead-in + exactly 300s of
-// practice), so changing a protocol in breathPattern.ts reflows the whole video
-// without any number here needing to be touched.
-const INTRO_SEC = 36;        // session intro voice runs 31.8s at the slowed pace
-const REST_SEC = 10;         // relaxation between techniques
-const VOICE_WINDOW_SEC = 28; // longest technique intro clip is 23.2s
-const PROMO_SEC = 18;
-const CELEBRATE_SEC = 8;     // congratulation flash after each technique
-
-const slot = (t: PranayamType) => totalSeconds(PRANAYAM_SPECS[t]);
-
-// Each technique is followed by its own celebration window and then the relaxation, so
-// the flash never eats into the rest.
-const T_BHASTRIKA = INTRO_SEC;
-const T_CELEB_1 = T_BHASTRIKA + slot('bhastrika');
-const T_REST_1 = T_CELEB_1 + CELEBRATE_SEC;
-const T_KAPALBHATI = T_REST_1 + REST_SEC;
-const T_CELEB_2 = T_KAPALBHATI + slot('kapalbhati');
-const T_REST_2 = T_CELEB_2 + CELEBRATE_SEC;
-const T_ANULOM = T_REST_2 + REST_SEC;
-const T_CELEB_3 = T_ANULOM + slot('anulom_vilom');
-const T_REST_3 = T_CELEB_3 + CELEBRATE_SEC;
-const T_BAHYA = T_REST_3 + REST_SEC;
-const T_CELEB_4 = T_BAHYA + slot('bahya');
-const T_REST_4 = T_CELEB_4 + CELEBRATE_SEC;
-const T_BHRAMARI = T_REST_4 + REST_SEC;
-const T_FINALE = T_BHRAMARI + slot('bhramari');
-const T_PROMO = T_FINALE + CELEBRATE_SEC;
+// The master timeline lives in sessionTimeline.ts (plain TS) so the chapter list and
+// the subtitle file can be generated from the same numbers this composition uses.
 
 /**
  * Congratulation flash after each technique. Counts and units come straight from the
@@ -72,7 +51,7 @@ export const compositionConfig = {
   width: 1920,
   height: 1080,
   fps: 30,
-  durationInSeconds: T_PROMO + PROMO_SEC,
+  durationInSeconds: SESSION_SEC,
 };
 
 export const Daily5Pranayam: React.FC = () => {
@@ -199,7 +178,9 @@ export const Daily5Pranayam: React.FC = () => {
               key={`breath-${currentType}-${r}`}
               from={Math.round(at * fps)}
               durationInFrames={Math.round(roundLen * fps)}
-            >
+              style={{
+                translate: "33.9px -17.8px"
+              }}>
               <Audio src={staticFile(BREATH_TRACKS[currentType])} volume={0.55} />
             </Sequence>
           );

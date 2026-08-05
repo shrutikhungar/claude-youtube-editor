@@ -26,7 +26,7 @@ export const SessionOverviewCard: React.FC = () => {
   return (
     <div style={{
       width: '1440px',
-      height: '710px',
+      height: '830px',
       backgroundColor: 'rgba(255, 253, 248, 0.95)',
       border: '2.5px solid rgba(207, 168, 100, 0.60)',
       borderRadius: '32px',
@@ -72,7 +72,7 @@ export const SessionOverviewCard: React.FC = () => {
           padding: '6px 20px',
           marginTop: '4px'
         }}>
-          🕒 TOTAL DURATION: 30 MINUTES (5 MIN PRACTICE PER TECHNIQUE + 30 SEC RECOVERY BREAKS)
+          🕒 30 MINUTES • 5 MIN PRACTICE PER TECHNIQUE • GUIDED REST AFTER EVERY ROUND
         </div>
       </div>
 
@@ -133,15 +133,43 @@ export const SessionOverviewCard: React.FC = () => {
         ))}
       </div>
 
-      {/* Footer Reminder */}
+      {/* Contraindication notice. Kapalbhati and Bhastrika are forceful techniques and
+          this session includes breath retention, so the warning is specific about who
+          should skip them rather than a generic "consult your doctor" line. */}
       <div style={{
-        fontFamily: FONT_BODY,
-        fontSize: '15px',
-        color: COLORS.ink,
-        opacity: 0.8,
-        fontStyle: 'italic'
+        width: '100%',
+        maxWidth: '1200px',
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: '18px',
+        backgroundColor: 'rgba(207, 168, 100, 0.14)',
+        border: `1.5px solid ${COLORS.accent2}`,
+        borderRadius: '18px',
+        padding: '16px 24px',
+        boxSizing: 'border-box',
       }}>
-        🪷 "Prepare a quiet space, sit comfortably, and let us begin our daily breathwork practice."
+        <span style={{ fontSize: '30px', lineHeight: 1.1, flexShrink: 0 }}>⚠️</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', textAlign: 'left', minWidth: 0 }}>
+          <div style={{
+            fontFamily: FONT_BODY,
+            fontSize: '13px',
+            fontWeight: 800,
+            color: COLORS.accent,
+            letterSpacing: '0.20em',
+            textTransform: 'uppercase',
+          }}>
+            BEFORE YOU BEGIN
+          </div>
+          <div style={{ fontFamily: FONT_BODY, fontSize: '15px', fontWeight: 600, color: COLORS.ink, lineHeight: 1.45 }}>
+            Skip the forceful techniques (Bellows and Skull Shining) if you are pregnant, or have
+            high blood pressure, heart disease, epilepsy, glaucoma, hernia, or recent abdominal surgery.
+          </div>
+          <div style={{ fontFamily: FONT_BODY, fontSize: '15px', fontWeight: 600, color: COLORS.ink, lineHeight: 1.45 }}>
+            Practise on an empty stomach. Never strain — if you feel dizzy, faint or breathless,
+            stop and breathe normally. This is general wellness content, not medical advice.
+          </div>
+        </div>
       </div>
     </div>
   );
