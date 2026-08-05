@@ -236,15 +236,15 @@ export const Daily5Pranayam: React.FC = () => {
 
                 // Play gentle full affirmation ONCE on breath 1 of each round for inhale/exhale
                 let soundFile = phaseFile(phase, side);
-                let soundVol = CUE_VOL;
-                let soundDur = Math.min(dur, 3);
+                let soundVol = 0.85;
+                let soundDur = dur;
 
-                if (isFirstBreathOfRound && (phase === 'inhale' || phase === 'exhale') && spec.pattern[phase] >= 2) {
+                if (isFirstBreathOfRound && (phase === 'inhale' || phase === 'exhale')) {
                   soundFile = phase === 'inhale'
                     ? 'library/audio/pranayam/affirmation_inhale.mp3'
                     : 'library/audio/pranayam/affirmation_exhale.mp3';
-                  soundVol = 0.65;
-                  soundDur = 4;
+                  soundVol = 0.85;
+                  soundDur = 4.5;
                 }
 
                 cues.push(
