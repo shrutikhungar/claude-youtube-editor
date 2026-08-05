@@ -37,6 +37,9 @@ SCRIPTS = {
     "cue_exhale.mp3": "Exhale.",
     "cue_hold.mp3": "Hold.",
     "cue_rest.mp3": "Rest.",
+    # The end of the retention IS the start of the rest — one moment, so one clip.
+    # Two separate cues fired half a second apart and talked over each other.
+    "cue_exhale_rest.mp3": "Exhale, and rest.",
     "cue_inhale_left.mp3": "Inhale, left.",
     "cue_exhale_right.mp3": "Exhale, right.",
     "cue_inhale_right.mp3": "Inhale, right.",

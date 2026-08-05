@@ -56,6 +56,7 @@ const VOICE_CLIP_SEC: Record<string, number> = {
   'cue_exhale.mp3': 2.14,
   'cue_hold.mp3': 1.92,
   'cue_rest.mp3': 1.99,
+  'cue_exhale_rest.mp3': 3.12,
   'cue_inhale_left.mp3': 2.93,
   'cue_exhale_right.mp3': 2.88,
   'cue_inhale_right.mp3': 2.88,
@@ -65,27 +66,50 @@ const VOICE_CLIP_SEC: Record<string, number> = {
 };
 
 /** Silence left between one cue finishing and the next being allowed to start. */
-const CUE_GAP_SEC = 0.35;
+const CUE_GAP_SEC = 0.2;
+
+/** Cues at or above this priority are guaranteed to play. */
+const STRUCTURAL_PRIORITY = 4;
 
 /**
- * Resolve a set of planned cues into ones that never talk over each other.
+ * Resolve planned cues into a set that never talks over itself.
  *
- * Earliest-first; a cue is dropped when it would begin before the previous kept cue
- * has finished. Delaying instead would be worse — a phase cue spoken late is simply
- * wrong guidance. Where two cues land together the higher priority wins, so the
- * structural calls (rest, closing retention) survive against per-breath chatter.
+ * Booked in TWO TIERS, because plain earliest-first was silently eating the important
+ * ones: the last hold cue of an Anulom round ran 0.27s past the round end and blocked
+ * "Rest" entirely, and the same happened to Bhastrika's rest call.
+ *
+ *   Tier 1 — structural cues (the closing retention sequence and the rest call) are
+ *            booked first and always play. They mark where you are in the practice.
+ *   Tier 2 — per-breath cues fill whatever gaps remain. Missing one costs nothing;
+ *            the ring is still showing the phase.
+ *
+ * Dropping rather than delaying is deliberate: a phase cue spoken late is wrong
+ * guidance, worse than no cue at all.
  */
 function scheduleCues<T extends { at: number; file: string; priority: number }>(planned: T[]): T[] {
-  const ordered = [...planned].sort((a, b) => (a.at - b.at) || (b.priority - a.priority));
-  const kept: T[] = [];
-  let freeAt = -Infinity;
+  const span = (c: T): [number, number] => {
+    const len = (VOICE_CLIP_SEC[c.file] ?? 3) + CUE_GAP_SEC;
+    return [c.at, c.at + len];
+  };
+  const byTime = (a: T, b: T) => a.at - b.at;
 
-  for (const cue of ordered) {
-    if (cue.at < freeAt) continue;              // would overlap what is already speaking
-    kept.push(cue);
-    freeAt = cue.at + (VOICE_CLIP_SEC[cue.file] ?? 3) + CUE_GAP_SEC;
+  const kept: T[] = [];
+  const booked: Array<[number, number]> = [];
+  const book = (c: T) => {
+    kept.push(c);
+    booked.push(span(c));
+  };
+  const clashes = ([s, e]: [number, number]) =>
+    booked.some(([bs, be]) => s < be && e > bs);
+
+  for (const cue of planned.filter((c) => c.priority >= STRUCTURAL_PRIORITY).sort(byTime)) {
+    if (!clashes(span(cue))) book(cue);
   }
-  return kept;
+  for (const cue of planned.filter((c) => c.priority < STRUCTURAL_PRIORITY).sort(byTime)) {
+    if (!clashes(span(cue))) book(cue);
+  }
+
+  return kept.sort(byTime);
 }
 
 const BREATH_VOLUME: Record<PranayamType, number> = {
@@ -350,20 +374,22 @@ export const Daily5Pranayam: React.FC = () => {
             if (spec.endOfRoundAntarSec > 0) {
               const antarStart = inhaleStart + spec.endOfRoundInhaleSec;
               planned.push({ key: `close-hold-${r}`, at: antarStart, file: 'cue_hold.mp3', vol: CUE_VOL, priority: 4 });
-              planned.push({
-                key: `close-out-${r}`,
-                at: antarStart + spec.endOfRoundAntarSec - 0.5,
-                file: 'cue_exhale.mp3', vol: CUE_VOL, priority: 4,
-              });
             }
           }
 
-          // Rest call, skipped after the final round where the chime takes over.
-          if (r < spec.rounds - 1 && spec.restBetweenRoundsSec > 0) {
+          // The retention ending and the rest beginning are the SAME moment, so where a
+          // technique has a closing hold they share one clip ("Exhale, and rest").
+          // Two separate cues half a second apart simply talked over each other.
+          const isLastRound = r === spec.rounds - 1;
+          const hasRest = !isLastRound && spec.restBetweenRoundsSec > 0;
+          if (hasRest) {
+            const closesWithHold = spec.endOfRoundInhaleSec > 0 && spec.endOfRoundAntarSec > 0;
             planned.push({
               key: `rest-${r}`,
               at: roundStart + roundLen,
-              file: 'cue_rest.mp3', vol: CUE_VOL, priority: 5,
+              file: closesWithHold ? 'cue_exhale_rest.mp3' : 'cue_rest.mp3',
+              vol: CUE_VOL,
+              priority: 5,
             });
           }
         }
