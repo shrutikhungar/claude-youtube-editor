@@ -46,6 +46,48 @@ import {
  */
 const PHASE_CUE_MIN_SEC = 2;
 
+/**
+ * Measured length of every spoken clip, from ffprobe. The scheduler needs to know how
+ * long a cue actually talks for — guessing is what let three voices stack up at the
+ * round boundary. Re-measure if gen_pranayam_voice.py changes the voice or the rate.
+ */
+const VOICE_CLIP_SEC: Record<string, number> = {
+  'cue_inhale.mp3': 2.14,
+  'cue_exhale.mp3': 2.14,
+  'cue_hold.mp3': 1.92,
+  'cue_rest.mp3': 1.99,
+  'cue_inhale_left.mp3': 2.93,
+  'cue_exhale_right.mp3': 2.88,
+  'cue_inhale_right.mp3': 2.88,
+  'cue_exhale_left.mp3': 2.86,
+  'affirmation_inhale.mp3': 4.51,
+  'affirmation_exhale.mp3': 4.94,
+};
+
+/** Silence left between one cue finishing and the next being allowed to start. */
+const CUE_GAP_SEC = 0.35;
+
+/**
+ * Resolve a set of planned cues into ones that never talk over each other.
+ *
+ * Earliest-first; a cue is dropped when it would begin before the previous kept cue
+ * has finished. Delaying instead would be worse — a phase cue spoken late is simply
+ * wrong guidance. Where two cues land together the higher priority wins, so the
+ * structural calls (rest, closing retention) survive against per-breath chatter.
+ */
+function scheduleCues<T extends { at: number; file: string; priority: number }>(planned: T[]): T[] {
+  const ordered = [...planned].sort((a, b) => (a.at - b.at) || (b.priority - a.priority));
+  const kept: T[] = [];
+  let freeAt = -Infinity;
+
+  for (const cue of ordered) {
+    if (cue.at < freeAt) continue;              // would overlap what is already speaking
+    kept.push(cue);
+    freeAt = cue.at + (VOICE_CLIP_SEC[cue.file] ?? 3) + CUE_GAP_SEC;
+  }
+  return kept;
+}
+
 const BREATH_VOLUME: Record<PranayamType, number> = {
   bhastrika: 0.08,
   kapalbhati: 0.14,
@@ -195,49 +237,6 @@ export const Daily5Pranayam: React.FC = () => {
           <Audio src={staticFile('library/audio/pranayam/bhramari_voice.mp3')} volume={0.85} />
         </Sequence>
       )}
-      {/* --- STRUCTURAL VOICE CUES ---
-          The transitions were silent, which leaves you guessing with your eyes closed:
-          when to take the closing inhale, when a round has ended, and when the rest
-          starts. These fire only at those moments — roughly once a minute — never per
-          breath. Positions come from the spec, so a retime moves them automatically. */}
-      {isActiveTechnique && (() => {
-        const spec = PRANAYAM_SPECS[currentType];
-        const roundLen = roundSeconds(spec);
-        const roundSlot = roundLen + spec.restBetweenRoundsSec;
-        const cues: Array<{ key: string; at: number; file: string; window: number }> = [];
-
-        for (let r = 0; r < spec.rounds; r++) {
-          const roundStart = currentStartSec + spec.leadInSec + r * roundSlot;
-
-          // "Now inhale fully, and hold" — only where the round closes with a retention.
-          if (spec.endOfRoundInhaleSec > 0) {
-            cues.push({
-              key: `inhale-hold-${r}`,
-              at: roundStart + breathingSeconds(spec),
-              file: 'cue_inhale_hold.mp3',
-              window: spec.endOfRoundInhaleSec + spec.endOfRoundAntarSec,
-            });
-          }
-
-          // "Release, and breathe normally" at the start of the between-round rest.
-          // Skipped on the last round — the completion chime and flash cover that.
-          if (r < spec.rounds - 1 && spec.restBetweenRoundsSec > 0) {
-            cues.push({
-              key: `release-${r}`,
-              at: roundStart + roundLen,
-              file: 'cue_release.mp3',
-              window: spec.restBetweenRoundsSec,
-            });
-          }
-        }
-
-        return cues.map((c) => (
-          <Sequence key={c.key} from={Math.round(c.at * fps)} durationInFrames={Math.round(c.window * fps)}>
-            <Audio src={staticFile(`library/audio/pranayam/${c.file}`)} volume={0.8} />
-          </Sequence>
-        ));
-      })()}
-
       {/* "Beautifully done. Relax." over the relaxation between techniques. */}
       {isResting && (() => {
         const at = isRest1 ? T_REST_1 : isRest2 ? T_REST_2 : isRest3 ? T_REST_3 : T_REST_4;
@@ -275,129 +274,109 @@ export const Daily5Pranayam: React.FC = () => {
           );
         });
       })()}
-      {/* --- GENTLE PHASE CUE VOICES ---
-          One soft spoken word at the START of each phase (Inhale → Hold → Exhale → Hold).
-          No counting — the visual ring handles the timing. Kapalbhati is skipped because
-          1-second strokes would turn every breath into a voice cue, which is noise.
-          Anulom Vilom uses nostril-specific cues (inhale_left / exhale_right etc). */}
+      {/* --- SPOKEN CUES ---
+          One soft word at the start of each phase, plus the closing retention sequence
+          and the rest call. Built as DATA first and then scheduled, because these come
+          from three different rules that used to collide: at every round boundary
+          "Exhale", "Rest" and the release line all fired within half a second of each
+          other and you heard three voices at once.
+
+          scheduleCues() drops any cue that would start before the previous one has
+          finished speaking, so overlap is structurally impossible rather than something
+          to notice and patch each time a rule is added. */}
       {isActiveTechnique && currentType !== 'kapalbhati' && (() => {
         const spec = PRANAYAM_SPECS[currentType];
         const cycle = cycleSeconds(spec);
         const roundLen = roundSeconds(spec);
         const roundSlot = roundLen + spec.restBetweenRoundsSec;
         const CUE_VOL = 0.55;
-        const cues: React.ReactNode[] = [];
 
-        // Map each active phase to its cue file, respecting nostril for Anulom Vilom
+        type Cue = { key: string; at: number; file: string; vol: number; priority: number };
+        const planned: Cue[] = [];
+
         const phaseFile = (phase: 'inhale' | 'hold1' | 'exhale' | 'hold2', side: 'left' | 'right') => {
-          if (phase === 'hold1') return 'library/audio/pranayam/cue_hold.mp3';
-          if (phase === 'hold2') return 'library/audio/pranayam/cue_hold.mp3';
+          if (phase === 'hold1' || phase === 'hold2') return 'cue_hold.mp3';
           if (spec.alternatesSides) {
-            if (phase === 'inhale') return side === 'left' ? 'library/audio/pranayam/cue_inhale_left.mp3' : 'library/audio/pranayam/cue_inhale_right.mp3';
-            if (phase === 'exhale') return side === 'left' ? 'library/audio/pranayam/cue_exhale_right.mp3' : 'library/audio/pranayam/cue_exhale_left.mp3';
+            if (phase === 'inhale') return side === 'left' ? 'cue_inhale_left.mp3' : 'cue_inhale_right.mp3';
+            return side === 'left' ? 'cue_exhale_right.mp3' : 'cue_exhale_left.mp3';
           }
-          if (phase === 'inhale') return 'library/audio/pranayam/cue_inhale.mp3';
-          return 'library/audio/pranayam/cue_exhale.mp3';
+          return phase === 'inhale' ? 'cue_inhale.mp3' : 'cue_exhale.mp3';
         };
 
         for (let r = 0; r < spec.rounds; r++) {
           const roundStart = currentStartSec + spec.leadInSec + r * roundSlot;
+
           for (let b = 0; b < spec.breathsPerRound; b++) {
             const breathStart = roundStart + b * cycle;
             const side: 'left' | 'right' = b % 2 === 0 ? 'left' : 'right';
-            const isFirstBreathOfRound = b === 0;
-
-            // Fire cues at the start of each active phase
             let offset = 0;
+
             for (const phase of ['inhale', 'hold1', 'exhale', 'hold2'] as const) {
               const dur = spec.pattern[phase];
-              if (dur > 0) {
-                const at = breathStart + offset;
-                const key = `cue-${currentType}-r${r}-b${b}-${phase}`;
+              if (dur <= 0) continue;
+              const at = breathStart + offset;
+              offset += dur;
 
-                // Play gentle full affirmation ONCE on breath 1 of each round for inhale/exhale
-                const isAffirmation = isFirstBreathOfRound && (phase === 'inhale' || phase === 'exhale');
-
-                // A spoken cue runs ~2s. Firing one into Bhastrika's or Kapalbhati's
-                // one-second phase truncates it mid-word ("Inha—") on every single
-                // breath, so those techniques are guided by the ring and the breath
-                // sound alone. The affirmation is exempt: it is a deliberate overlay
-                // with its own window, not a per-phase cue.
-                if (!isAffirmation && dur < PHASE_CUE_MIN_SEC) {
-                  offset += dur;
-                  continue;
-                }
-
-                let soundFile = phaseFile(phase, side);
-                let soundVol = 0.85;
-                let soundDur = dur;
-
-                if (isAffirmation) {
-                  soundFile = phase === 'inhale'
-                    ? 'library/audio/pranayam/affirmation_inhale.mp3'
-                    : 'library/audio/pranayam/affirmation_exhale.mp3';
-                  soundVol = 0.85;
-                  // Long enough for the whole line — the exhale affirmation is 4.94s
-                  // and was being cut off mid-word at 4.5s.
-                  soundDur = 5.2;
-                }
-
-                cues.push(
-                  <Sequence
-                    key={key}
-                    from={Math.round(at * fps)}
-                    durationInFrames={Math.round(soundDur * fps)}
-                    style={{
-                      translate: "12.4px -1.1px"
-                    }}>
-                    <Audio src={staticFile(soundFile)} volume={soundVol} />
-                  </Sequence>
-                );
-                offset += dur;
+              // The round opens with the two affirmations instead of bare cues.
+              if (b === 0 && (phase === 'inhale' || phase === 'exhale')) {
+                planned.push({
+                  key: `aff-${currentType}-r${r}-${phase}`,
+                  at,
+                  file: phase === 'inhale' ? 'affirmation_inhale.mp3' : 'affirmation_exhale.mp3',
+                  vol: 0.85,
+                  priority: 3,
+                });
+                continue;
               }
+
+              // A spoken word runs ~2s; firing one into a 1s phase truncates it mid-word.
+              if (dur < PHASE_CUE_MIN_SEC) continue;
+
+              planned.push({
+                key: `cue-${currentType}-r${r}-b${b}-${phase}`,
+                at,
+                file: phaseFile(phase, side),
+                vol: CUE_VOL,
+                priority: 1,
+              });
             }
           }
-          // End-of-round closing retention cues: Inhale → Hold → Exhale → Rest
+
+          // Closing retention: inhale, hold, then release the held breath.
           if (spec.endOfRoundInhaleSec > 0) {
-            const inhaleStart = roundStart + roundLen - spec.endOfRoundInhaleSec - spec.endOfRoundAntarSec - spec.endOfRoundBahyaSec;
+            const inhaleStart = roundStart + breathingSeconds(spec);
+            planned.push({ key: `close-in-${r}`, at: inhaleStart, file: 'cue_inhale.mp3', vol: CUE_VOL, priority: 4 });
 
-            // "Inhale" — deep catch-up breath
-            cues.push(
-              <Sequence key={`cue-${currentType}-r${r}-roundinhale`} from={Math.round(inhaleStart * fps)} durationInFrames={Math.round(3 * fps)}>
-                <Audio src={staticFile('library/audio/pranayam/cue_inhale.mp3')} volume={CUE_VOL} />
-              </Sequence>
-            );
-
-            // "Hold" — antar kumbhaka
             if (spec.endOfRoundAntarSec > 0) {
               const antarStart = inhaleStart + spec.endOfRoundInhaleSec;
-              cues.push(
-                <Sequence key={`cue-${currentType}-r${r}-antar`} from={Math.round(antarStart * fps)} durationInFrames={Math.round(3 * fps)}>
-                  <Audio src={staticFile('library/audio/pranayam/cue_hold.mp3')} volume={CUE_VOL} />
-                </Sequence>
-              );
-
-              // "Exhale" — release the held breath, 0.5s before hold ends
-              const exhaleStart = antarStart + spec.endOfRoundAntarSec - 0.5;
-              cues.push(
-                <Sequence key={`cue-${currentType}-r${r}-roundexhale`} from={Math.round(exhaleStart * fps)} durationInFrames={Math.round(3 * fps)}>
-                  <Audio src={staticFile('library/audio/pranayam/cue_exhale.mp3')} volume={CUE_VOL} />
-                </Sequence>
-              );
+              planned.push({ key: `close-hold-${r}`, at: antarStart, file: 'cue_hold.mp3', vol: CUE_VOL, priority: 4 });
+              planned.push({
+                key: `close-out-${r}`,
+                at: antarStart + spec.endOfRoundAntarSec - 0.5,
+                file: 'cue_exhale.mp3', vol: CUE_VOL, priority: 4,
+              });
             }
           }
 
-          // "Rest" — at the start of the between-rounds rest (skip after the last round)
+          // Rest call, skipped after the final round where the chime takes over.
           if (r < spec.rounds - 1 && spec.restBetweenRoundsSec > 0) {
-            const restStart = roundStart + roundLen; // exact frame when rest begins
-            cues.push(
-              <Sequence key={`cue-${currentType}-r${r}-rest`} from={Math.round(restStart * fps)} durationInFrames={Math.round(3 * fps)}>
-                <Audio src={staticFile('library/audio/pranayam/cue_rest.mp3')} volume={CUE_VOL} />
-              </Sequence>
-            );
+            planned.push({
+              key: `rest-${r}`,
+              at: roundStart + roundLen,
+              file: 'cue_rest.mp3', vol: CUE_VOL, priority: 5,
+            });
           }
-        } // end for(r)
-        return cues;
+        }
+
+        return scheduleCues(planned).map((c) => (
+          <Sequence
+            key={c.key}
+            from={Math.round(c.at * fps)}
+            durationInFrames={Math.round((VOICE_CLIP_SEC[c.file] ?? 3) * fps)}
+          >
+            <Audio src={staticFile(`library/audio/pranayam/${c.file}`)} volume={c.vol} />
+          </Sequence>
+        ));
       })()}
       {/* Sparkle Particles */}
       <SparkleParticlesOverlay count={30} />
