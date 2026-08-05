@@ -251,7 +251,10 @@ export const Daily5Pranayam: React.FC = () => {
                   <Sequence
                     key={key}
                     from={Math.round(at * fps)}
-                    durationInFrames={Math.round(soundDur * fps)}>
+                    durationInFrames={Math.round(soundDur * fps)}
+                    style={{
+                      translate: "418.2px 144.8px"
+                    }}>
                     <Audio src={staticFile(soundFile)} volume={soundVol} />
                   </Sequence>
                 );

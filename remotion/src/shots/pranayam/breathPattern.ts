@@ -138,13 +138,13 @@ export const PRANAYAM_SPECS: Record<PranayamType, PranayamSpec> = {
     turnsPerRep: 2,
     repUnit: 'CYCLE',
   },
-  // This technique IS bahya kumbhaka — 6s external retention with the three locks,
-  // a beginner length. 3 x (6 x 14s) + 2 x 24s rest = 300s.
+  // Bahya Pranayama: 4s Inhale, 6s Exhale, 12s External Hold (Bahya Kumbhaka)
+  // 3 rounds x (4 breaths x 22s) + 2 x 18s rest = 264s + 36s = 300s (5 MINUTES).
   bahya: {
-    pattern: { inhale: 4, hold1: 0, exhale: 4, hold2: 6 },
-    breathsPerRound: 6,
+    pattern: { inhale: 4, hold1: 0, exhale: 6, hold2: 12 },
+    breathsPerRound: 4,
     rounds: 3,
-    restBetweenRoundsSec: 24,
+    restBetweenRoundsSec: 18,
     endOfRoundInhaleSec: 0,
     endOfRoundAntarSec: 0,
     endOfRoundBahyaSec: 0,
