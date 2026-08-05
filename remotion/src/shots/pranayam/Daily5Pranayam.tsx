@@ -39,6 +39,13 @@ import {
  * fatiguing over five minutes, while the Bhramari hum is the technique itself and
  * needs to stay audible enough to match your own humming to.
  */
+/**
+ * Shortest phase that can hold a spoken cue. The single-word clips run about two
+ * seconds at the session's slowed speaking rate, so anything shorter gets truncated
+ * mid-word rather than guiding anyone.
+ */
+const PHASE_CUE_MIN_SEC = 2;
+
 const BREATH_VOLUME: Record<PranayamType, number> = {
   bhastrika: 0.08,
   kapalbhati: 0.14,
@@ -309,16 +316,30 @@ export const Daily5Pranayam: React.FC = () => {
                 const key = `cue-${currentType}-r${r}-b${b}-${phase}`;
 
                 // Play gentle full affirmation ONCE on breath 1 of each round for inhale/exhale
+                const isAffirmation = isFirstBreathOfRound && (phase === 'inhale' || phase === 'exhale');
+
+                // A spoken cue runs ~2s. Firing one into Bhastrika's or Kapalbhati's
+                // one-second phase truncates it mid-word ("Inha—") on every single
+                // breath, so those techniques are guided by the ring and the breath
+                // sound alone. The affirmation is exempt: it is a deliberate overlay
+                // with its own window, not a per-phase cue.
+                if (!isAffirmation && dur < PHASE_CUE_MIN_SEC) {
+                  offset += dur;
+                  continue;
+                }
+
                 let soundFile = phaseFile(phase, side);
                 let soundVol = 0.85;
                 let soundDur = dur;
 
-                if (isFirstBreathOfRound && (phase === 'inhale' || phase === 'exhale')) {
+                if (isAffirmation) {
                   soundFile = phase === 'inhale'
                     ? 'library/audio/pranayam/affirmation_inhale.mp3'
                     : 'library/audio/pranayam/affirmation_exhale.mp3';
                   soundVol = 0.85;
-                  soundDur = 4.5;
+                  // Long enough for the whole line — the exhale affirmation is 4.94s
+                  // and was being cut off mid-word at 4.5s.
+                  soundDur = 5.2;
                 }
 
                 cues.push(

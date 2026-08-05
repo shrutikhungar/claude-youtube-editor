@@ -26,6 +26,23 @@ SCRIPTS = {
     "cue_inhale_hold.mp3": "Now inhale fully, and hold the breath in.",
     "cue_release.mp3": "Release, and breathe normally.",
     "cue_relax.mp3": "Beautifully done. Relax, and let the breath settle.",
+
+    # Per-phase cues. Only fired where the phase is long enough to hold a spoken word
+    # (>= 2s) — see PHASE_CUE_MIN_SEC in Daily5Pranayam.tsx. Kept to single words so
+    # they land inside the phase rather than running over into the next one.
+    "cue_inhale.mp3": "Inhale.",
+    "cue_exhale.mp3": "Exhale.",
+    "cue_hold.mp3": "Hold.",
+    "cue_rest.mp3": "Rest.",
+    "cue_inhale_left.mp3": "Inhale, left.",
+    "cue_exhale_right.mp3": "Exhale, right.",
+    "cue_inhale_right.mp3": "Inhale, right.",
+    "cue_exhale_left.mp3": "Exhale, left.",
+
+    # Spoken once on the first breath of each round, matching the on-screen affirmation.
+    # Trimmed to fit the 4.5s window the composition gives them.
+    "affirmation_inhale.mp3": "Absorb pure life force and healing energy.",
+    "affirmation_exhale.mp3": "Release all stress, tension and heavy thoughts.",
 }
 
 async def generate_all():
