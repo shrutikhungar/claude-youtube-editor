@@ -2,9 +2,16 @@ import React from 'react';
 import { useCurrentFrame, useVideoConfig, interpolate, spring } from 'remotion';
 import { COLORS } from '../../brand';
 import { FONT_DISPLAY, FONT_BODY } from '../../fonts';
-import { INTRO_TECHNIQUE_MARKS, INTRO_DURATION_MARK, INTRO_HIGHLIGHT_SEC } from './introMarks';
+import { INTRO_MARKS, INTRO_HIGHLIGHT_SEC } from './introMarks';
+import { PranayamLevel, PRACTICE_SEC_BY_LEVEL } from './breathPattern';
+import { buildTimeline } from './sessionTimeline';
 
-export const SessionOverviewCard: React.FC = () => {
+interface SessionOverviewCardProps {
+  /** Which protocol set this session runs. Defaults to the beginner session. */
+  level?: PranayamLevel;
+}
+
+export const SessionOverviewCard: React.FC<SessionOverviewCardProps> = ({ level = 'beginner' }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -30,22 +37,29 @@ export const SessionOverviewCard: React.FC = () => {
     );
   };
 
+  // Each level has its own narration, so its own spoken timings.
+  const marks = INTRO_MARKS[level] ?? INTRO_MARKS.beginner;
+
   // Stays lit until the next name is spoken, so the highlight travels down the list.
   const techniqueGlow = (i: number) => {
-    const start = INTRO_TECHNIQUE_MARKS[i];
-    const next = INTRO_TECHNIQUE_MARKS[i + 1];
+    const start = marks.techniques[i];
+    const next = marks.techniques[i + 1];
     return lit(start ?? null, next ? next - start : INTRO_HIGHLIGHT_SEC);
   };
 
-  // "…practised for a full five minutes" — every badge answers to that one phrase.
-  const durationGlow = lit(INTRO_DURATION_MARK, 2.6);
+  // "…practised for a full five/eight minutes" — every badge answers to that phrase.
+  const durationGlow = lit(marks.duration, 2.6);
+
+  const practiceMin = (PRACTICE_SEC_BY_LEVEL[level] / 60).toFixed(1);
+  const totalMin = Math.round(buildTimeline(level).SESSION_SEC / 60);
+  const levelLabel = level === 'intermediate' ? 'INTERMEDIATE' : 'BEGINNER';
 
   const techniques = [
-    { num: 1, title: 'BHASTRIKA PRANAYAMA', subtitle: 'Bellows Breathing', time: '5.0 MIN', icon: '🫁' },
-    { num: 2, title: 'KAPALBHATI PRANAYAMA', subtitle: 'Skull Shining Breath', time: '5.0 MIN', icon: '🔥' },
-    { num: 3, title: 'ANULOM VILOM', subtitle: 'Alternate Nostril Breathing', time: '5.0 MIN', icon: '🌿' },
-    { num: 4, title: 'BAHYA PRANAYAMA', subtitle: 'External Breath Retention', time: '5.0 MIN', icon: '🌬️' },
-    { num: 5, title: 'BHRAMARI PRANAYAMA', subtitle: 'Humming Bee Breath', time: '5.0 MIN', icon: '🐝' },
+    { num: 1, title: 'BHASTRIKA PRANAYAMA', subtitle: 'Bellows Breathing', time: `${practiceMin} MIN`, icon: '🫁' },
+    { num: 2, title: 'KAPALBHATI PRANAYAMA', subtitle: 'Skull Shining Breath', time: `${practiceMin} MIN`, icon: '🔥' },
+    { num: 3, title: 'ANULOM VILOM', subtitle: 'Alternate Nostril Breathing', time: `${practiceMin} MIN`, icon: '🌿' },
+    { num: 4, title: 'BAHYA PRANAYAMA', subtitle: 'External Breath Retention', time: `${practiceMin} MIN`, icon: '🌬️' },
+    { num: 5, title: 'BHRAMARI PRANAYAMA', subtitle: 'Humming Bee Breath', time: `${practiceMin} MIN`, icon: '🐝' },
   ];
 
   return (
@@ -75,7 +89,7 @@ export const SessionOverviewCard: React.FC = () => {
           letterSpacing: '0.22em',
           textTransform: 'uppercase'
         }}>
-          SOULFUL INTELLIGENCE STUDIO • DAILY PRACTICE
+          SOULFUL INTELLIGENCE STUDIO • {levelLabel} PRACTICE
         </div>
         <div style={{
           fontFamily: FONT_DISPLAY,
@@ -97,7 +111,7 @@ export const SessionOverviewCard: React.FC = () => {
           padding: '6px 20px',
           marginTop: '4px'
         }}>
-          🕒 30 MINUTES • 5 MIN PRACTICE PER TECHNIQUE • GUIDED REST AFTER EVERY ROUND
+          🕒 {totalMin} MINUTES • {practiceMin} MIN PRACTICE PER TECHNIQUE • GUIDED REST AFTER EVERY ROUND
         </div>
       </div>
 

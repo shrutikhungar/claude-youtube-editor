@@ -51,6 +51,52 @@ SCRIPTS = {
     "affirmation_exhale.mp3": "Release all stress, tension and heavy thoughts.",
 }
 
+# ---------------------------------------------------------------------------------
+# INTERMEDIATE narration. Only the intro and the five technique instructions differ —
+# the short cues and affirmations are the same words at both levels and are copied
+# across rather than re-synthesised.
+#
+# Each instruction states this level's actual counts, so the voice, the ring and the
+# panel all agree. Keep every clip under leadInSec (28s) or breathing starts while the
+# narrator is still talking.
+# ---------------------------------------------------------------------------------
+INTERMEDIATE_SCRIPTS = {
+    "intro_voice.mp3": (
+        "Welcome to Soulful Intelligence Studio. This is the intermediate Daily Five "
+        "breathwork session. Work through the beginner session until it feels comfortable "
+        "before you attempt this one. We will guide you through five breathing techniques: "
+        "Bellows Breathing, Skull Shining Breath, Alternate Nostril Breathing, "
+        "External Breath Retention, and Humming Bee Breath. Each technique is practised for "
+        "a full eight minutes, at a faster pace and with longer holds. Let us begin."
+    ),
+    "bhastrika_voice.mp3": (
+        "Technique one. Bellows Breathing. Sit tall with a straight spine. Inhale and exhale "
+        "forcefully through the nose, about one full breath every second. Each round ends "
+        "with a deep inhale and a fifteen second hold."
+    ),
+    "kapalbhati_voice.mp3": (
+        "Technique two. Skull Shining Breath. Exhale sharply by pulling the lower abdomen in, "
+        "and let each inhalation happen on its own. Keep the rhythm steady. Each round ends "
+        "with a deep inhale and a twenty second hold."
+    ),
+    "anulom_vilom_voice.mp3": (
+        "Technique three. Alternate Nostril Breathing. Inhale through the left for five counts. "
+        "Hold the breath in for ten. Exhale through the right for ten, then hold the breath out "
+        "for five. Repeat, leading with the right nostril."
+    ),
+    "bahya_voice.mp3": (
+        "Technique four. External Breath Retention. Inhale for five counts, then exhale "
+        "completely. Hold the breath out for fifteen seconds while you engage the root, "
+        "abdominal and throat locks. Release smoothly before inhaling."
+    ),
+    "bhramari_voice.mp3": (
+        "Technique five. Humming Bee Breath. Close the ears with your thumbs and rest your "
+        "fingers over the eyes, nostrils and lips. Inhale for five counts, pause briefly, then "
+        "hum out slowly for sixteen seconds."
+    ),
+}
+
+
 async def generate_all():
     out_dirs = [
         ROOT / "media" / "library" / "audio" / "pranayam",
@@ -66,8 +112,26 @@ async def generate_all():
     # the personality tags. Slowed and pitched down for a settling, unhurried read.
     voice = "en-US-MichelleNeural"
 
-    for filename, text in SCRIPTS.items():
-        print(f"Generating voiceover: {filename}...")
+    inter_dirs = [d / "intermediate" for d in out_dirs]
+    for d in inter_dirs:
+        d.mkdir(parents=True, exist_ok=True)
+
+    await synth(SCRIPTS, out_dirs, voice, "beginner")
+    await synth(INTERMEDIATE_SCRIPTS, inter_dirs, voice, "intermediate")
+
+    # The short cues and affirmations are identical at both levels — copy rather than
+    # burn another round of synthesis on the same words.
+    shared = [k for k in SCRIPTS if k.startswith(("cue_", "affirmation_"))]
+    for name in shared:
+        data = (out_dirs[0] / name).read_bytes()
+        for d in inter_dirs:
+            (d / name).write_bytes(data)
+    print(f"Copied {len(shared)} shared cue clips into intermediate/")
+
+
+async def synth(scripts, dirs, voice, level):
+    for filename, text in scripts.items():
+        print(f"[{level}] {filename}...")
         # edge-tts defaults to SentenceBoundary, which is far too coarse to light up
         # individual technique names — ask for word-level events on the intro.
         boundary = "WordBoundary" if filename == "intro_voice.mp3" else "SentenceBoundary"
@@ -75,7 +139,7 @@ async def generate_all():
             text, voice, rate="-22%", pitch="-8Hz", boundary=boundary
         )
 
-        primary_file = out_dirs[0] / filename
+        primary_file = dirs[0] / filename
 
         if filename == "intro_voice.mp3":
             # Stream instead of save() so the word-boundary events come through with
@@ -88,23 +152,24 @@ async def generate_all():
                         f.write(chunk["data"])
                     elif chunk["type"] == "WordBoundary":
                         marks.append((chunk["offset"] / 10_000_000, chunk["text"]))
-            write_intro_marks(marks)
+            write_intro_marks(marks, level)
         else:
             await communicate.save(str(primary_file))
 
         # Copy to all target public directories
         file_bytes = primary_file.read_bytes()
-        for d in out_dirs[1:]:
+        for d in dirs[1:]:
             (d / filename).write_bytes(file_bytes)
 
-        print(f"Saved & synced {filename} across all audio directories.")
 
+# Filled in as each level's intro is synthesised, then written out together.
+MARKS = {}
 
 # Words that begin each technique's spoken name, in session order.
 NAME_ANCHORS = ["Bellows", "Skull", "Alternate", "External", "Humming"]
 
 
-def write_intro_marks(marks):
+def write_intro_marks(marks, level="beginner"):
     """Emit the spoken timings the SessionOverviewCard highlights against."""
     def first_at(word, after=0.0):
         for t, w in marks:
@@ -129,14 +194,30 @@ def write_intro_marks(marks):
         earlier = [t for t, _ in marks if t < minutes_at]
         duration_mark = round(earlier[-1], 2) if earlier else round(minutes_at, 2)
 
+    # Accumulate across levels — each level has its own narration and therefore its own
+    # timings. Writing only the level just synthesised would leave the other level
+    # highlighting against the wrong clip, which is exactly what happened once.
+    MARKS[level] = (technique_marks, duration_mark)
+
+    body = ",\n".join(
+        f"  {lvl}: {{ techniques: {tm}, duration: {dm if dm is not None else 'null'} }}"
+        for lvl, (tm, dm) in MARKS.items()
+    )
+
     out = ROOT / "remotion" / "src" / "shots" / "pranayam" / "introMarks.ts"
     out.write_text(
         "// GENERATED by gen_pranayam_voice.py — do not edit by hand.\n"
         "// Spoken word timings from the TTS engine's own word-boundary events, so the\n"
-        "// intro card highlights each technique at the exact moment it is named.\n\n"
-        f"export const INTRO_TECHNIQUE_MARKS: number[] = {technique_marks};\n\n"
-        "/** When \"five minutes\" is spoken, for the duration badges. */\n"
-        f"export const INTRO_DURATION_MARK: number | null = {duration_mark if duration_mark is not None else 'null'};\n\n"
+        "// intro card highlights each technique at the exact moment it is named.\n"
+        "// Each level has its own narration and therefore its own timings.\n\n"
+        "export interface IntroMarks {\n"
+        "  /** Second at which each technique name begins, in session order. */\n"
+        "  techniques: number[];\n"
+        "  /** When the practice length is spoken, for the duration badges. */\n"
+        "  duration: number | null;\n"
+        "}\n\n"
+        "export const INTRO_MARKS: Record<string, IntroMarks> = {\n"
+        f"{body},\n}};\n\n"
         "/** How long each highlight stays lit. */\n"
         "export const INTRO_HIGHLIGHT_SEC = 2.2;\n",
         encoding="utf-8",

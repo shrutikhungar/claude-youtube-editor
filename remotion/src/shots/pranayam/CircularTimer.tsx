@@ -3,7 +3,8 @@ import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { COLORS } from '../../brand';
 import { FONT_DISPLAY, FONT_BODY } from '../../fonts';
 import {
-  PRANAYAM_SPECS,
+  SPECS_BY_LEVEL,
+  PranayamLevel,
   PHASE_COLORS,
   PHASE_SANSKRIT,
   PranayamType,
@@ -16,6 +17,8 @@ import {
 interface CircularTimerProps {
   startSec?: number;
   type?: PranayamType;
+  /** Which protocol set to read. Defaults to the beginner session. */
+  level?: PranayamLevel;
 }
 
 // Convert angle + radius to SVG circle point (0deg = 12 o'clock, clockwise).
@@ -35,13 +38,14 @@ function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: nu
 export const CircularTimer: React.FC<CircularTimerProps> = ({
   startSec = 0,
   type = 'bhastrika',
+  level = 'beginner',
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const currentTime = frame / fps;
   const relTime = Math.max(0, currentTime - startSec);
 
-  const spec = PRANAYAM_SPECS[type];
+  const spec = SPECS_BY_LEVEL[level][type];
   const state = resolveBreath(spec, relTime);
 
   // Countdown of PRACTICE time. Stays parked at 05:00 through the spoken lead-in

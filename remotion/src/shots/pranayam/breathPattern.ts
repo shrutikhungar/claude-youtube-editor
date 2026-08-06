@@ -10,6 +10,13 @@
 
 export type PranayamType = 'bhastrika' | 'kapalbhati' | 'anulom_vilom' | 'bahya' | 'bhramari';
 
+/**
+ * Difficulty level. Everything downstream — the ring, the counters, the breathing
+ * audio, the chapters — is derived from the spec, so a second level is a second set
+ * of numbers rather than a second implementation.
+ */
+export type PranayamLevel = 'beginner' | 'intermediate';
+
 export type PhaseKey = 'inhale' | 'hold1' | 'exhale' | 'hold2';
 
 /** Phase order around the ring, clockwise from 12 o'clock. */
@@ -79,7 +86,7 @@ export interface PranayamSpec {
  * on-screen "5 MINUTES" badge and the countdown clock both refer to. The spoken
  * lead-in sits outside that 300s.
  */
-export const PRANAYAM_SPECS: Record<PranayamType, PranayamSpec> = {
+export const BEGINNER_SPECS: Record<PranayamType, PranayamSpec> = {
   // 30 breaths/min (1s in, 1s out) — the standard beginner bellows rate. The old 2s/2s
   // was half speed and did not read as bellows breathing. No per-breath hold: kumbhaka
   // comes as a 6s antar retention at the END of each round (beginner: 5-10s).
@@ -171,14 +178,133 @@ export const PRANAYAM_SPECS: Record<PranayamType, PranayamSpec> = {
   },
 };
 
+/**
+ * INTERMEDIATE protocols — for someone who has the beginner session comfortable.
+ *
+ * Three things step up together: the forceful techniques double in speed, the rep
+ * counts roughly triple, and every retention lengthens. Practice is 480s per technique
+ * rather than 300s, so the session runs about 45 minutes.
+ *
+ * These are a real jump in demand — a 15s retention after 65 fast bellows breaths, and
+ * 20s after 100 Kapalbhati strokes. They are standard intermediate figures, but they
+ * are not somewhere to arrive without the beginner session first, which is why the
+ * intro narration and the on-screen notice both say so.
+ *
+ * Each entry is tuned so practiceSeconds lands on EXACTLY 480s.
+ */
+export const INTERMEDIATE_SPECS: Record<PranayamType, PranayamSpec> = {
+  // 60 breaths/min — double the beginner rate, the classic intermediate bellows pace.
+  // 5 x (65 breaths + 4s inhale + 15s hold) + 4 x 15s rest = 480s. 325 breaths.
+  bhastrika: {
+    pattern: { inhale: 0.5, hold1: 0, exhale: 0.5, hold2: 0 },
+    breathsPerRound: 65,
+    rounds: 5,
+    restBetweenRoundsSec: 15,
+    endOfRoundInhaleSec: 4,
+    endOfRoundAntarSec: 15,
+    endOfRoundBahyaSec: 0,
+    leadInSec: 28,
+    alternatesSides: false,
+    turnsPerRep: 1,
+    repUnit: 'BREATH',
+    inhaleLabel: 'DEEP INHALE',
+    exhaleLabel: 'DEEP EXHALE',
+  },
+  // 100 strokes/min. 5 x (100 strokes + 4s inhale + 20s hold) + 4 x 15s rest = 480s.
+  kapalbhati: {
+    pattern: { inhale: 0, hold1: 0, exhale: 0.6, hold2: 0 },
+    breathsPerRound: 100,
+    rounds: 5,
+    restBetweenRoundsSec: 15,
+    endOfRoundInhaleSec: 4,
+    endOfRoundAntarSec: 20,
+    endOfRoundBahyaSec: 0,
+    leadInSec: 28,
+    alternatesSides: false,
+    turnsPerRep: 1,
+    repUnit: 'STROKE',
+    exhaleLabel: 'FORCEFUL EXHALE',
+  },
+  // 1:2:2:1 — the retention now doubles the inhale, a genuine step past the beginner
+  // 1:1:1. Still short of the 1:4:2 Hatha ratio, which stays out of a follow-along.
+  // 16 turns x 30s = 480s, unbroken. 8 full cycles.
+  anulom_vilom: {
+    pattern: { inhale: 5, hold1: 10, exhale: 10, hold2: 5 },
+    breathsPerRound: 16,
+    rounds: 1,
+    restBetweenRoundsSec: 0,
+    endOfRoundInhaleSec: 0,
+    endOfRoundAntarSec: 0,
+    endOfRoundBahyaSec: 0,
+    leadInSec: 28,
+    alternatesSides: true,
+    turnsPerRep: 2,
+    repUnit: 'CYCLE',
+  },
+  // 15s external retention with the locks, up from 6s.
+  // 3 x (6 x 25s) + 2 x 15s rest = 480s.
+  bahya: {
+    pattern: { inhale: 5, hold1: 0, exhale: 5, hold2: 15 },
+    breathsPerRound: 6,
+    rounds: 3,
+    restBetweenRoundsSec: 15,
+    endOfRoundInhaleSec: 0,
+    endOfRoundAntarSec: 0,
+    endOfRoundBahyaSec: 0,
+    leadInSec: 28,
+    alternatesSides: false,
+    turnsPerRep: 1,
+    repUnit: 'BREATH',
+  },
+  // 16s hum — a long exhale, which is the whole point at this level.
+  // 20 x 24s = 480s, unbroken.
+  bhramari: {
+    pattern: { inhale: 5, hold1: 3, exhale: 16, hold2: 0 },
+    breathsPerRound: 20,
+    rounds: 1,
+    restBetweenRoundsSec: 0,
+    endOfRoundInhaleSec: 0,
+    endOfRoundAntarSec: 0,
+    endOfRoundBahyaSec: 0,
+    leadInSec: 28,
+    alternatesSides: false,
+    turnsPerRep: 1,
+    repUnit: 'BREATH',
+    exhaleLabel: 'HUM OUT',
+  },
+};
+
+export const SPECS_BY_LEVEL: Record<PranayamLevel, Record<PranayamType, PranayamSpec>> = {
+  beginner: BEGINNER_SPECS,
+  intermediate: INTERMEDIATE_SPECS,
+};
+
+/** Practice seconds per technique at each level — what the on-screen badge shows. */
+export const PRACTICE_SEC_BY_LEVEL: Record<PranayamLevel, number> = {
+  beginner: 300,
+  intermediate: 480,
+};
+
+/**
+ * Default export kept as the beginner set so the original composition and every
+ * existing import keep working unchanged.
+ */
+export const PRANAYAM_SPECS = BEGINNER_SPECS;
+
 /** Phases actually used by a technique, in ring order. */
 export function activePhases(spec: PranayamSpec): PhaseKey[] {
   return PHASE_ORDER.filter((k) => spec.pattern[k] > 0);
 }
 
-/** Seconds in one full breath. */
+/**
+ * Seconds in one full breath.
+ *
+ * The floor exists only to keep an all-zero pattern from dividing by zero. It used to
+ * be 1 second, which silently rounded Kapalbhati's 0.6s intermediate stroke up to 1s
+ * and made the round 40s longer than the spec said.
+ */
 export function cycleSeconds(spec: PranayamSpec): number {
-  return Math.max(1, PHASE_ORDER.reduce((sum, k) => sum + spec.pattern[k], 0));
+  return Math.max(0.05, PHASE_ORDER.reduce((sum, k) => sum + spec.pattern[k], 0));
 }
 
 /** Seconds of continuous breathing in one round, before the closing retention. */

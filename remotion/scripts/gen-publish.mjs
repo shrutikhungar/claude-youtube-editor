@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 /**
- * Generates the YouTube publishing assets for the Daily 5 Pranayam session:
+ * Generates the publishing assets for BOTH pranayam sessions:
  *
- *   videos/daily5pranayam.chapters.txt  paste-ready description with chapter stamps
- *   videos/daily5pranayam.srt           subtitles for the spoken guidance
+ *   videos/<id>.chapters.txt   paste-ready description with chapter stamps
+ *   videos/<id>.srt            subtitles for the spoken guidance
+ *   videos/breath-spec.json    phase timings for gen_pranayam_sfx.py
  *
- * Both are derived from remotion/src/shots/pranayam/sessionTimeline.ts, so a retime
- * in breathPattern.ts reflows them. Never hand-edit the timings — re-run this.
+ * All of it derives from sessionTimeline.ts and breathPattern.ts, so a retime reflows
+ * every one of them. Never hand-edit the timings — re-run this.
  *
- *   node scripts/gen-publish.mjs   (from remotion/)
+ *   cd remotion && node scripts/gen-publish.mjs
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -18,40 +19,89 @@ import { build } from 'esbuild';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const SRC = join(ROOT, 'remotion/src/shots/pranayam');
 
-// The timeline is TypeScript; bundle it to a data URL module so we can import it
-// without a build step or a compiled artifact lying around.
-const bundled = await build({
-  entryPoints: [join(SRC, 'sessionTimeline.ts')],
-  bundle: true,
-  format: 'esm',
-  platform: 'node',
-  write: false,
-});
-const mod = await import(
-  'data:text/javascript;base64,' + Buffer.from(bundled.outputFiles[0].text).toString('base64')
-);
-
-const { TECHNIQUES, chapters, stamp, SESSION_SEC, INTRO_SEC } = mod;
-const { PRANAYAM_SPECS } = await (async () => {
-  const b = await build({
-    entryPoints: [join(SRC, 'breathPattern.ts')],
+/** Bundle a TS module to a data URL so we can import it without a build step. */
+async function load(file) {
+  const out = await build({
+    entryPoints: [join(SRC, file)],
     bundle: true, format: 'esm', platform: 'node', write: false,
   });
-  return import('data:text/javascript;base64,' + Buffer.from(b.outputFiles[0].text).toString('base64'));
-})();
+  return import('data:text/javascript;base64,' + Buffer.from(out.outputFiles[0].text).toString('base64'));
+}
 
-// ---------------------------------------------------------------- chapters
+const timeline = await load('sessionTimeline.ts');
+const bp = await load('breathPattern.ts');
+const { buildTimeline, chapters, stamp } = timeline;
+const { SPECS_BY_LEVEL, PRACTICE_SEC_BY_LEVEL, cycleSeconds, breathingSeconds, roundSeconds, practiceSeconds, repsPerRound, totalReps } = bp;
 
-const lines = chapters().map((c) => `${stamp(c.at)} ${c.label}`);
+const LEVELS = [
+  { level: 'beginner', id: 'daily5pranayam', label: 'Beginner' },
+  { level: 'intermediate', id: 'daily5pranayam-intermediate', label: 'Intermediate' },
+];
 
-const totalMin = Math.round(SESSION_SEC / 60);
-const description = `A complete ${totalMin}-minute guided pranayam session — five classical breathing
-techniques, each practised for a full five minutes, with the pace, the round count
-and the rest all on screen so you never have to wonder where you are.
+const outDir = join(ROOT, 'videos');
+mkdirSync(outDir, { recursive: true });
+
+// ---------------------------------------------------------------- spec export
+//
+// gen_pranayam_sfx.py builds one breath track per technique per level, and each track
+// has to be exactly roundSeconds() long with the phases at the right offsets. Python
+// cannot read the TypeScript specs, and mirroring the numbers by hand silently
+// desynchronises the audio the moment a pattern changes.
+const specExport = {};
+for (const { level } of LEVELS) {
+  specExport[level] = {};
+  for (const [key, spec] of Object.entries(SPECS_BY_LEVEL[level])) {
+    specExport[level][key] = {
+      pattern: spec.pattern,
+      breathsPerRound: spec.breathsPerRound,
+      rounds: spec.rounds,
+      endOfRoundInhaleSec: spec.endOfRoundInhaleSec,
+      endOfRoundAntarSec: spec.endOfRoundAntarSec,
+      endOfRoundBahyaSec: spec.endOfRoundBahyaSec,
+      cycleSeconds: cycleSeconds(spec),
+      breathingSeconds: breathingSeconds(spec),
+      roundSeconds: roundSeconds(spec),
+      practiceSeconds: practiceSeconds(spec),
+    };
+  }
+}
+writeFileSync(join(outDir, 'breath-spec.json'), JSON.stringify(specExport, null, 2), 'utf8');
+
+// ---------------------------------------------------------------- per level
+
+const srtStamp = (sec) => {
+  const ms = Math.round(sec * 1000);
+  const h = String(Math.floor(ms / 3600000)).padStart(2, '0');
+  const m = String(Math.floor((ms % 3600000) / 60000)).padStart(2, '0');
+  const s = String(Math.floor((ms % 60000) / 1000)).padStart(2, '0');
+  return `${h}:${m}:${s},${String(ms % 1000).padStart(3, '0')}`;
+};
+
+for (const { level, id, label } of LEVELS) {
+  const tl = buildTimeline(level);
+  const specs = SPECS_BY_LEVEL[level];
+  const practiceMin = Math.round(PRACTICE_SEC_BY_LEVEL[level] / 60);
+  const totalMin = Math.round(tl.SESSION_SEC / 60);
+  const lines = chapters(tl).map((c) => `${stamp(c.at)} ${c.label}`);
+
+  const levelIntro = level === 'intermediate'
+    ? `An intermediate ${totalMin}-minute pranayam session — five classical breathing
+techniques, each practised for a full ${practiceMin} minutes, at a faster pace and with
+noticeably longer retentions than the beginner session.
+
+This is a step up, not a starting point. Work through the beginner session until it is
+comfortable before you attempt this one.`
+    : `A complete ${totalMin}-minute guided pranayam session — five classical breathing
+techniques, each practised for a full ${practiceMin} minutes, with the pace, the round
+count and the rest all on screen so you never have to wonder where you are.
 
 Beginner level throughout. Every technique is broken into short rounds with recovery
 between them, and both retentions (antar and bahya kumbhaka) are held at beginner
-lengths. Follow the ring: it shows what to do and how long is left.
+lengths.`;
+
+  const description = `${levelIntro}
+
+Follow the ring: it shows what to do and how long is left.
 
 ⚠️ BEFORE YOU BEGIN
 Skip the forceful techniques (Bellows and Skull Shining) if you are pregnant, or have
@@ -64,11 +114,10 @@ CHAPTERS
 ${lines.join('\n')}
 
 WHAT YOU PRACTISE
-${TECHNIQUES.map((t) => {
-  const s = PRANAYAM_SPECS[t.type];
-  const reps = Math.round(s.breathsPerRound / s.turnsPerRep) * s.rounds;
+${tl.techniques.map((t) => {
+  const s = specs[t.type];
   const unit = s.repUnit.toLowerCase() + 's';
-  return `${t.index}. ${t.title} (${t.sanskrit}) — ${s.rounds} rounds, ${reps} ${unit}`;
+  return `${t.index}. ${t.title} (${t.sanskrit}) — ${s.rounds} round${s.rounds > 1 ? 's' : ''}, ${totalReps(s)} ${unit}`;
 }).join('\n')}
 
 Soulful Intelligence Studio — breathe • observe • transform
@@ -77,74 +126,34 @@ MindGym app: skrmblissai.in/mindgym
 Custom routine requests: connect@skrmblissai.in
 `;
 
-// ---------------------------------------------------------------- subtitles
+  const srtCues = [
+    {
+      start: 0,
+      end: tl.introSec - 4,
+      text: `Welcome to Soulful Intelligence Studio.\nThe ${label} Daily Five breathwork sequence.`,
+    },
+    ...tl.techniques.map((t) => ({
+      start: t.startSec,
+      end: t.startSec + specs[t.type].leadInSec - 4,
+      text: `Technique ${t.index}. ${t.title}.`,
+    })),
+  ];
 
-// The only speech is the session intro and one instruction per technique. Each is
-// captioned as a single cue spanning its spoken window.
-const srtCues = [
-  { start: 0, end: INTRO_SEC - 4, text: 'Welcome to Soulful Intelligence Studio.\nToday we practise the Daily Five breathwork sequence.' },
-  ...TECHNIQUES.map((t) => ({
-    start: t.startSec,
-    end: t.startSec + PRANAYAM_SPECS[t.type].leadInSec - 4,
-    text: `Technique ${t.index}. ${t.title}.`,
-  })),
-];
+  const srt = srtCues
+    .map((c, i) => `${i + 1}\n${srtStamp(c.start)} --> ${srtStamp(c.end)}\n${c.text}\n`)
+    .join('\n');
 
-const srtStamp = (sec) => {
-  const ms = Math.round(sec * 1000);
-  const h = String(Math.floor(ms / 3600000)).padStart(2, '0');
-  const m = String(Math.floor((ms % 3600000) / 60000)).padStart(2, '0');
-  const s = String(Math.floor((ms % 60000) / 1000)).padStart(2, '0');
-  return `${h}:${m}:${s},${String(ms % 1000).padStart(3, '0')}`;
-};
+  writeFileSync(join(outDir, `${id}.chapters.txt`), description, 'utf8');
+  writeFileSync(join(outDir, `${id}.srt`), srt, 'utf8');
 
-const srt = srtCues
-  .map((c, i) => `${i + 1}\n${srtStamp(c.start)} --> ${srtStamp(c.end)}\n${c.text}\n`)
-  .join('\n');
-
-// ---------------------------------------------------------------- write
-
-const outDir = join(ROOT, 'videos');
-mkdirSync(outDir, { recursive: true });
-writeFileSync(join(outDir, 'daily5pranayam.chapters.txt'), description, 'utf8');
-writeFileSync(join(outDir, 'daily5pranayam.srt'), srt, 'utf8');
-
-// ------------------------------------------------- spec export for the audio generator
-//
-// gen_pranayam_sfx.py builds one breath track per technique and each track has to be
-// exactly roundSeconds() long with the phases at the right offsets. Python cannot read
-// the TypeScript specs, and mirroring the numbers by hand silently desynchronises the
-// audio from the video the moment a pattern changes. Exporting them removes that risk.
-const bp = await build({
-  entryPoints: [join(SRC, 'breathPattern.ts')],
-  bundle: true, format: 'esm', platform: 'node', write: false,
-});
-const bpMod = await import(
-  'data:text/javascript;base64,' + Buffer.from(bp.outputFiles[0].text).toString('base64')
-);
-
-const specExport = {};
-for (const [key, spec] of Object.entries(bpMod.PRANAYAM_SPECS)) {
-  specExport[key] = {
-    pattern: spec.pattern,
-    breathsPerRound: spec.breathsPerRound,
-    rounds: spec.rounds,
-    endOfRoundInhaleSec: spec.endOfRoundInhaleSec,
-    endOfRoundAntarSec: spec.endOfRoundAntarSec,
-    endOfRoundBahyaSec: spec.endOfRoundBahyaSec,
-    cycleSeconds: bpMod.cycleSeconds(spec),
-    breathingSeconds: bpMod.breathingSeconds(spec),
-    roundSeconds: bpMod.roundSeconds(spec),
-    practiceSeconds: bpMod.practiceSeconds(spec),
-  };
+  console.log(`\n${label.toUpperCase()}  (${stamp(tl.SESSION_SEC)})`);
+  console.log(`  ${id}.chapters.txt  (${lines.length} chapters)`);
+  console.log(`  ${id}.srt           (${srtCues.length} cues)`);
+  for (const [k, s] of Object.entries(specExport[level])) {
+    const want = PRACTICE_SEC_BY_LEVEL[level];
+    const ok = s.practiceSeconds === want ? 'ok' : `!! ${s.practiceSeconds}s, expected ${want}`;
+    console.log(`  ${k.padEnd(13)} round ${String(s.roundSeconds).padStart(5)}s x${s.rounds}  ${ok}`);
+  }
 }
-writeFileSync(join(outDir, 'breath-spec.json'), JSON.stringify(specExport, null, 2), 'utf8');
 
-console.log(`videos/daily5pranayam.chapters.txt  (${lines.length} chapters)`);
-console.log(`videos/daily5pranayam.srt           (${srtCues.length} cues)`);
-console.log('videos/breath-spec.json             (round lengths for gen_pranayam_sfx.py)');
-for (const [k, s] of Object.entries(specExport)) {
-  const ok = s.practiceSeconds === 300 ? 'ok' : `!! practice ${s.practiceSeconds}s, expected 300`;
-  console.log(`  ${k.padEnd(13)} round ${String(s.roundSeconds).padStart(4)}s x ${s.rounds}   ${ok}`);
-}
-console.log(`session length ${stamp(SESSION_SEC)}`);
+console.log('\nvideos/breath-spec.json  (both levels — feed to gen_pranayam_sfx.py)');

@@ -1,11 +1,13 @@
 import React from 'react';
 import { useCurrentFrame, useVideoConfig, interpolate } from 'remotion';
 import { FONT_DISPLAY, FONT_BODY } from '../../fonts';
-import { PranayamType, PRANAYAM_SPECS, resolveBreath, roundSeconds } from './breathPattern';
+import { PranayamType, PranayamLevel, SPECS_BY_LEVEL, resolveBreath, roundSeconds } from './breathPattern';
 
 interface BreathAffirmationCardProps {
   startSec: number;
   type: PranayamType;
+  /** Which protocol set to read. Defaults to the beginner session. */
+  level?: PranayamLevel;
 }
 
 /**
@@ -62,13 +64,13 @@ const RESTING = {
   borderColor: 'rgba(207, 168, 100, 0.45)',
 };
 
-export const BreathAffirmationCard: React.FC<BreathAffirmationCardProps> = ({ startSec, type }) => {
+export const BreathAffirmationCard: React.FC<BreathAffirmationCardProps> = ({ startSec, type, level = 'beginner' }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const currentTime = frame / fps;
   const relTime = currentTime - startSec;
 
-  const spec = PRANAYAM_SPECS[type];
+  const spec = SPECS_BY_LEVEL[level][type];
   const state = resolveBreath(spec, relTime);
 
   // Track when the current message began, so a change can cross-fade rather than snap.

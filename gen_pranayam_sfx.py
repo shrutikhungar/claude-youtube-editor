@@ -29,10 +29,15 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent
 SPEC_PATH = ROOT / "videos" / "breath-spec.json"
-OUT_DIRS = [
+# Beginner tracks sit at the root of the pranayam folder; intermediate in a subfolder,
+# matching the audio() helper in PranayamSession.tsx.
+BASE_DIRS = [
     ROOT / "media" / "library" / "audio" / "pranayam",
     ROOT / "remotion" / "public" / "library" / "audio" / "pranayam",
 ]
+
+def out_dirs(level: str):
+    return [d if level == "beginner" else d / "intermediate" for d in BASE_DIRS]
 
 SR = 44100
 RNG = np.random.default_rng(7)  # fixed seed keeps renders reproducible
@@ -177,7 +182,7 @@ def build_round(key: str, spec: dict) -> np.ndarray:
     return track
 
 
-def write_mp3(samples: np.ndarray, name: str, gain: float) -> None:
+def write_mp3(samples: np.ndarray, name: str, gain: float, level: str = "beginner") -> None:
     peak = np.max(np.abs(samples))
     if peak > 0:
         samples = samples / peak
@@ -190,14 +195,15 @@ def write_mp3(samples: np.ndarray, name: str, gain: float) -> None:
         w.setframerate(SR)
         w.writeframes(pcm.tobytes())
 
-    first = OUT_DIRS[0] / f"{name}.mp3"
+    dirs = out_dirs(level)
+    first = dirs[0] / f"{name}.mp3"
     first.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(
         ["ffmpeg", "-y", "-loglevel", "error", "-i", str(tmp_wav), "-b:a", "160k", str(first)],
         check=True,
     )
     data = first.read_bytes()
-    for d in OUT_DIRS[1:]:
+    for d in dirs[1:]:
         d.mkdir(parents=True, exist_ok=True)
         (d / f"{name}.mp3").write_bytes(data)
     tmp_wav.unlink()
@@ -225,16 +231,17 @@ if __name__ == "__main__":
     if not SPEC_PATH.exists():
         sys.exit(f"{SPEC_PATH} missing — run `cd remotion && node scripts/gen-publish.mjs` first.")
 
-    specs = json.loads(SPEC_PATH.read_text(encoding="utf-8"))
-    print(f"Building round tracks from {SPEC_PATH.relative_to(ROOT)}:")
+    by_level = json.loads(SPEC_PATH.read_text(encoding="utf-8"))
+    wanted = sys.argv[1:] or list(by_level.keys())
 
-    for key, spec in specs.items():
-        track = build_round(key, spec)
-        actual = len(track) / SR
-        assert abs(actual - spec["roundSeconds"]) < 0.01, (
-            f"{key}: track {actual}s but roundSeconds is {spec['roundSeconds']}s"
-        )
-        write_mp3(track, OUT_NAMES[key], gain=VOICES[key]["gain"])
-
-    print("Other:")
-    write_mp3(completion_chime(), "completion_chime", gain=0.80)
+    for level in wanted:
+        specs = by_level[level]
+        print(f"\n{level.upper()} round tracks (from {SPEC_PATH.name}):")
+        for key, spec in specs.items():
+            track = build_round(key, spec)
+            actual = len(track) / SR
+            assert abs(actual - spec["roundSeconds"]) < 0.01, (
+                f"{level}/{key}: track {actual}s but roundSeconds is {spec['roundSeconds']}s"
+            )
+            write_mp3(track, OUT_NAMES[key], gain=VOICES[key]["gain"], level=level)
+        write_mp3(completion_chime(), "completion_chime", gain=0.80, level=level)

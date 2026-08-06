@@ -3,7 +3,8 @@ import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { COLORS } from '../../brand';
 import { FONT_DISPLAY, FONT_BODY } from '../../fonts';
 import {
-  PRANAYAM_SPECS,
+  SPECS_BY_LEVEL,
+  PranayamLevel,
   PHASE_COLORS,
   PHASE_ICONS,
   PHASE_SANSKRIT,
@@ -16,15 +17,17 @@ import {
 interface BreathingPhasePanelProps {
   startSec: number;
   type: PranayamType;
+  /** Which protocol set to read. Defaults to the beginner session. */
+  level?: PranayamLevel;
 }
 
-export const BreathingPhasePanel: React.FC<BreathingPhasePanelProps> = ({ startSec, type }) => {
+export const BreathingPhasePanel: React.FC<BreathingPhasePanelProps> = ({ startSec, type, level = 'beginner' }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const currentTime = frame / fps;
   const relTime = Math.max(0, currentTime - startSec);
 
-  const spec = PRANAYAM_SPECS[type];
+  const spec = SPECS_BY_LEVEL[level][type];
   const state = resolveBreath(spec, relTime);
   const phases = activePhases(spec);
 

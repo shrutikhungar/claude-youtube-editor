@@ -115,7 +115,11 @@ export const RemotionRoot: React.FC = () => {
   return (
     <>
       {shots.map(({ Comp, config }) => {
-        const isBottom = config.id === 'Daily5Pranayam';
+        // Prefix match, not equality: the pranayam session is now two compositions
+        // (Daily5PranayamBeginner / …Intermediate). An exact check against the old id
+        // silently moved the banner to the top of both when they were renamed, which
+        // also pushes the stage out of the layout it is built for.
+        const isBottom = config.id.startsWith('Daily5Pranayam');
         const isMeditation = config.id === 'MeditationEpisode';
         const WrappedComp: React.FC = () => (
           <GlobalWrapper isBottomBanner={isBottom} showCaptions={isMeditation}>
