@@ -210,6 +210,90 @@ def write_mp3(samples: np.ndarray, name: str, gain: float, level: str = "beginne
     print(f"  {name + '.mp3':<24} {len(pcm) / SR:7.1f}s  {len(data) / 1024:6.0f} KB")
 
 
+def tingsha() -> np.ndarray:
+    """Tibetan tingsha — two small cymbals struck together.
+
+    The character comes from very high, strongly inharmonic partials and a pair of
+    near-identical frequencies that beat slowly against each other as the two cymbals
+    ring at slightly different pitches. Long shimmering decay, near-instant attack.
+    """
+    dur = 6.5
+    t = np.linspace(0, dur, int(SR * dur), endpoint=False)
+    # (frequency, amplitude, decay seconds)
+    partials = [
+        (2148.0, 1.00, 4.6), (2161.0, 0.92, 4.4),   # the beating pair
+        (3187.0, 0.55, 3.2), (3203.0, 0.48, 3.0),
+        (5310.0, 0.30, 2.1), (6944.0, 0.18, 1.6),
+        (8830.0, 0.10, 1.1), (1074.0, 0.22, 5.2),   # faint low hum under it
+    ]
+    out = np.zeros_like(t)
+    for f, amp, decay in partials:
+        out += amp * np.sin(2 * np.pi * f * t) * np.exp(-t / decay)
+    out /= sum(p[1] for p in partials)
+
+    # A whisper of noise at the strike, for the metal-on-metal contact.
+    strike = int(SR * 0.02)
+    out[:strike] += band_noise(strike, 3000.0, 12000.0) * 0.35 * np.linspace(1, 0, strike)
+
+    atk = int(SR * 0.002)
+    out[:atk] *= np.linspace(0, 1, atk)
+    return out
+
+
+def whoosh() -> np.ndarray:
+    """Smooth cinematic whoosh for a technique change.
+
+    Band-limited noise whose passband sweeps up and then back down while the level
+    swells and falls — no transient, so it reads as movement rather than an impact.
+    """
+    dur = 2.2
+    n = int(SR * dur)
+    x = np.linspace(0, 1, n, endpoint=False)
+
+    # Three noise layers crossfaded by a rising-then-falling centre frequency.
+    low = band_noise(n, 120.0, 600.0)
+    mid = band_noise(n, 500.0, 2200.0)
+    high = band_noise(n, 2000.0, 7000.0)
+
+    sweep = np.sin(np.pi * x) ** 0.7            # 0 -> 1 -> 0
+    w_high = sweep ** 2
+    w_mid = 1.0 - np.abs(sweep - 0.5) * 2.0
+    w_low = (1.0 - sweep) ** 2
+    body = low * w_low + mid * np.clip(w_mid, 0, 1) + high * w_high
+
+    env = np.sin(np.pi * x) ** 1.4               # smooth in and out, no click
+    return body * env
+
+
+def congratulations() -> np.ndarray:
+    """A bright rising bell figure for finishing a technique.
+
+    Four struck tones climbing a major triad, each ringing on under the next, so the
+    chord assembles itself rather than arriving all at once. Celebratory without
+    breaking the calm the rest of the session is holding.
+    """
+    dur = 3.6
+    t = np.linspace(0, dur, int(SR * dur), endpoint=False)
+    out = np.zeros_like(t)
+
+    root = 528.0
+    steps = [(1.0, 0.00), (1.25, 0.16), (1.5, 0.32), (2.0, 0.50)]  # ratio, strike time
+    for ratio, at in steps:
+        idx = int(at * SR)
+        seg = t[: len(t) - idx]
+        tone = np.zeros_like(seg)
+        # A few inharmonic partials keep it bell-like rather than organ-like.
+        for k, (mult, amp, decay) in enumerate([(1.0, 1.0, 2.2), (2.01, 0.4, 1.3),
+                                                (3.02, 0.18, 0.8), (4.5, 0.08, 0.5)]):
+            tone += amp * np.sin(2 * np.pi * root * ratio * mult * seg) * np.exp(-seg / decay)
+        atk = int(SR * 0.003)
+        tone[:atk] *= np.linspace(0, 1, atk)
+        out[idx:] += tone
+
+    peak = np.max(np.abs(out))
+    return out / peak if peak > 0 else out
+
+
 def completion_chime() -> np.ndarray:
     """Singing-bowl chime for the end-of-technique flash. Bell partials are inharmonic
     and lower partials ring longer, which is what makes it read as a bowl."""
@@ -244,4 +328,10 @@ if __name__ == "__main__":
                 f"{level}/{key}: track {actual}s but roundSeconds is {spec['roundSeconds']}s"
             )
             write_mp3(track, OUT_NAMES[key], gain=VOICES[key]["gain"], level=level)
+
+        # Session sounds. Gains are deliberately low — these punctuate a quiet practice,
+        # they are not events in their own right. The composition attenuates them further.
         write_mp3(completion_chime(), "completion_chime", gain=0.80, level=level)
+        write_mp3(tingsha(), "tingsha", gain=0.70, level=level)
+        write_mp3(whoosh(), "whoosh", gain=0.55, level=level)
+        write_mp3(congratulations(), "congratulations", gain=0.75, level=level)

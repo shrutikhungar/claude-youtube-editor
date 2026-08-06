@@ -24,6 +24,8 @@ export const REST_SEC = 10;         // relaxation between techniques
 export const VOICE_WINDOW_SEC = 28; // longest technique intro clip is 23.3s
 export const PROMO_SEC = 18;
 export const CELEBRATE_SEC = 8;     // congratulation flash after each technique
+export const SUMMARY_SEC = 16;      // whole-session tally, before the course promo
+export const TRANSITION_SEC = 1.1;  // digital wipe into each new technique
 
 export interface TechniqueSlot {
   type: PranayamType;
@@ -53,6 +55,7 @@ export interface SessionTimeline {
   T_REST_4: number;
   T_BHRAMARI: number;
   T_FINALE: number;
+  T_SUMMARY: number;
   T_PROMO: number;
   SESSION_SEC: number;
   techniques: TechniqueSlot[];
@@ -89,7 +92,10 @@ export function buildTimeline(level: PranayamLevel): SessionTimeline {
   const T_REST_4 = T_CELEB_4 + CELEBRATE_SEC;
   const T_BHRAMARI = T_REST_4 + REST_SEC;
   const T_FINALE = T_BHRAMARI + slot('bhramari');
-  const T_PROMO = T_FINALE + CELEBRATE_SEC;
+  // The whole-session tally sits between the final congratulation and the course promo,
+  // so the last thing you see about your own practice is what you actually did.
+  const T_SUMMARY = T_FINALE + CELEBRATE_SEC;
+  const T_PROMO = T_SUMMARY + SUMMARY_SEC;
 
   const starts = [T_BHASTRIKA, T_KAPALBHATI, T_ANULOM, T_BAHYA, T_BHRAMARI];
   const celebs = [T_CELEB_1, T_CELEB_2, T_CELEB_3, T_CELEB_4, T_FINALE];
@@ -100,7 +106,7 @@ export function buildTimeline(level: PranayamLevel): SessionTimeline {
     introSec,
     T_BHASTRIKA, T_CELEB_1, T_REST_1, T_KAPALBHATI, T_CELEB_2, T_REST_2,
     T_ANULOM, T_CELEB_3, T_REST_3, T_BAHYA, T_CELEB_4, T_REST_4,
-    T_BHRAMARI, T_FINALE, T_PROMO,
+    T_BHRAMARI, T_FINALE, T_SUMMARY, T_PROMO,
     SESSION_SEC: T_PROMO + PROMO_SEC,
     techniques: NAMES.map((n, i) => ({
       ...n,
@@ -137,6 +143,7 @@ export function chapters(tl: SessionTimeline): Array<{ at: number; label: string
     out.push({ at: t.startSec + spec.leadInSec, label: `↳ Practice: ${t.title}` });
   }
   out.push({ at: tl.T_FINALE, label: 'Session complete' });
+  out.push({ at: tl.T_SUMMARY, label: 'Your session in numbers' });
   out.push({ at: tl.T_PROMO, label: 'Keep practising' });
   return out;
 }
@@ -146,6 +153,6 @@ export const BEGINNER = buildTimeline('beginner');
 export const {
   T_BHASTRIKA, T_CELEB_1, T_REST_1, T_KAPALBHATI, T_CELEB_2, T_REST_2,
   T_ANULOM, T_CELEB_3, T_REST_3, T_BAHYA, T_CELEB_4, T_REST_4,
-  T_BHRAMARI, T_FINALE, T_PROMO, SESSION_SEC,
+  T_BHRAMARI, T_FINALE, T_SUMMARY, T_PROMO, SESSION_SEC,
 } = BEGINNER;
 export const TECHNIQUES = BEGINNER.techniques;

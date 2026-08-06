@@ -15,12 +15,14 @@ import SparkleParticlesOverlay from '../brand/SparkleParticlesOverlay';
 import PromoEndCard from '../brand/PromoEndCard';
 import PeriodicLikeBanner, { likeBannerOpacity } from '../brand/PeriodicLikeBanner';
 import TechniqueCompleteCard from './TechniqueCompleteCard';
+import SessionSummaryCard from './SessionSummaryCard';
+import TechniqueTransition from './TechniqueTransition';
 import {
   PranayamType, PranayamLevel, cycleSeconds, roundSeconds, breathingSeconds,
   totalReps, resolveBreath, repsPerRound, PRACTICE_SEC_BY_LEVEL,
 } from './breathPattern';
 import {
-  REST_SEC, VOICE_WINDOW_SEC, CELEBRATE_SEC, buildTimeline,
+  REST_SEC, VOICE_WINDOW_SEC, CELEBRATE_SEC, SUMMARY_SEC, TRANSITION_SEC, buildTimeline,
 } from './sessionTimeline';
 
 // The master timeline lives in sessionTimeline.ts (plain TS) so the chapter list and
@@ -148,7 +150,7 @@ export const PranayamSession: React.FC<{ level?: PranayamLevel }> = ({ level = '
   const {
     T_BHASTRIKA, T_CELEB_1, T_REST_1, T_KAPALBHATI, T_CELEB_2, T_REST_2,
     T_ANULOM, T_CELEB_3, T_REST_3, T_BAHYA, T_CELEB_4, T_REST_4,
-    T_BHRAMARI, T_FINALE, T_PROMO,
+    T_BHRAMARI, T_FINALE, T_SUMMARY, T_PROMO,
   } = TL;
   const INTRO_SEC = TL.introSec;
   const CELEBRATIONS = TL.techniques.map((t) => ({
@@ -217,7 +219,9 @@ export const PranayamSession: React.FC<{ level?: PranayamLevel }> = ({ level = '
         return (
           <React.Fragment key={c.type}>
             <Sequence from={Math.round(c.at * fps)} durationInFrames={Math.round(CELEBRATE_SEC * fps)}>
-              <Audio src={staticFile(audio('completion_chime.mp3'))} volume={0.65} />
+              {/* Rising bell figure for finishing a technique, with the bowl under it. */}
+              <Audio src={staticFile(audio('congratulations.mp3'))} volume={0.42} />
+              <Audio src={staticFile(audio('completion_chime.mp3'))} volume={0.28} />
             </Sequence>
             <TechniqueCompleteCard
               startSec={c.at}
@@ -232,6 +236,37 @@ export const PranayamSession: React.FC<{ level?: PranayamLevel }> = ({ level = '
           </React.Fragment>
         );
       })}
+      {/* Whole-session tally, between the last congratulation and the course promo. */}
+      {currentTime >= T_SUMMARY && currentTime < T_PROMO && (
+        <SessionSummaryCard startSec={T_SUMMARY} durationSec={SUMMARY_SEC} level={level} />
+      )}
+
+      {/* --- SESSION SOUNDS ---
+          Deliberately quiet. These punctuate a practice whose whole point is silence,
+          so they mark a moment and get out of the way rather than announcing themselves. */}
+
+      {/* Tingsha opens the session and marks each technique change. */}
+      <Sequence from={0} durationInFrames={Math.round(8 * fps)}>
+        <Audio src={staticFile(audio('tingsha.mp3'))} volume={0.30} />
+      </Sequence>
+      {TL.techniques.map((t) => (
+        <React.Fragment key={`open-${t.type}`}>
+          {/* Whoosh carries the digital wipe; tingsha lands as the new card settles. */}
+          <Sequence from={Math.round((t.startSec - TRANSITION_SEC * 0.4) * fps)} durationInFrames={Math.round(3 * fps)}>
+            <Audio src={staticFile(audio('whoosh.mp3'))} volume={0.16} />
+          </Sequence>
+          <Sequence from={Math.round((t.startSec + 0.5) * fps)} durationInFrames={Math.round(8 * fps)}>
+            <Audio src={staticFile(audio('tingsha.mp3'))} volume={0.22} />
+          </Sequence>
+          {/* Digital wipe into the technique. */}
+          <TechniqueTransition
+            startSec={t.startSec - TRANSITION_SEC * 0.4}
+            durationSec={TRANSITION_SEC}
+            seed={t.type}
+          />
+        </React.Fragment>
+      ))}
+
       {/* Periodic Like & Subscribe Overlay */}
       {!isEndPromo && !isIntro && <PeriodicLikeBanner until={T_PROMO} />}
       {/* Soft Background Meditation Music */}
@@ -437,10 +472,13 @@ export const PranayamSession: React.FC<{ level?: PranayamLevel }> = ({ level = '
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 6px 20px rgba(122,106,88,0.10)', overflow: 'hidden'
           }}>
+            {/* A 128px asset, not the 2.1 MB 1254px original — at 42px on screen the
+                full-size PNG only bought a decode race that left the badge blank on the
+                opening frames. (`from` is a Sequence prop and did nothing here.) */}
             <Img
-              src={staticFile('library/logos/si-logo.png')}
+              src={staticFile('library/logos/si-logo-128.png')}
               style={{ width: '42px', height: '42px', objectFit: 'contain' }}
-              from={736} />
+            />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ fontFamily: FONT_DISPLAY, fontSize: '22px', fontWeight: 700, color: '#2b2520', letterSpacing: '0.04em', lineHeight: 1.1 }}>
