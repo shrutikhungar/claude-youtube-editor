@@ -19,6 +19,12 @@ remotion/src/shots.manifest.json
 # ── RAW FOOTAGE & MASTER CUTS ──────────────────────────────────────────────
 # Camera files and their master exports NEVER go to GitHub. The repo carries the
 # reproducible pipeline (cuts.json, transcripts, plans, shots), not the footage.
+# Two levels: videos/<project>/<file>.mp4 AND rendered masters that land directly
+# at videos/<file>.mp4 (e.g. videos/daily5pranayam.mp4) — both must be covered.
+videos/*.MP4
+videos/*.mp4
+videos/*.MOV
+videos/*.mov
 videos/*/*.MP4
 videos/*/*.mp4
 videos/*/*.MOV
